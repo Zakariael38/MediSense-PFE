@@ -1,0 +1,2078 @@
+<!DOCTYPE html>
+<html lang="fr" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MediSense — Interface Médecin</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Syne:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:    #050d1a;
+    --navy2:   #0a1830;
+    --navy3:   #0f2040;
+    --blue:    #1D5FE8;
+    --blue2:   #3B82F6;
+    --blue-glow: rgba(29,95,232,0.18);
+    --teal:    #0EA5E9;
+    --green:   #10B981;
+    --amber:   #F59E0B;
+    --red:     #EF4444;
+    --white:   #F0F6FF;
+    --gray:    #7A93B4;
+    --gray2:   #4a6480;
+    --border:  rgba(255,255,255,0.07);
+    --border2: rgba(29,95,232,0.2);
+    --card:    rgba(255,255,255,0.03);
+    --card2:   rgba(255,255,255,0.05);
+    --glass:   rgba(255,255,255,0.06);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--navy);
+    color: var(--white);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── BACKGROUND MESH ── */
+  body::before {
+    content:'';
+    position:fixed; inset:0; z-index:0;
+    background:
+      radial-gradient(ellipse 80% 50% at 20% 20%, rgba(29,95,232,0.1) 0%, transparent 55%),
+      radial-gradient(ellipse 60% 40% at 80% 80%, rgba(14,165,233,0.07) 0%, transparent 55%),
+      radial-gradient(ellipse 40% 60% at 60% 30%, rgba(16,185,129,0.04) 0%, transparent 50%);
+    pointer-events:none;
+  }
+
+  body::after {
+    content:'';
+    position:fixed; inset:0; z-index:0;
+    background-image:
+      linear-gradient(rgba(29,95,232,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(29,95,232,0.025) 1px, transparent 1px);
+    background-size:52px 52px;
+    pointer-events:none;
+  }
+
+  /* ══ LOGIN PAGE ══ */
+  #loginPage {
+    position:fixed; inset:0; z-index:100;
+    display:flex; align-items:center; justify-content:center;
+    background: var(--navy);
+  }
+
+  #loginPage::before {
+    content:'';
+    position:absolute; inset:0;
+    background:
+      radial-gradient(ellipse 60% 60% at 30% 40%, rgba(29,95,232,0.2) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 40% at 70% 70%, rgba(14,165,233,0.1) 0%, transparent 50%);
+  }
+
+  .login-card {
+    position:relative; z-index:1;
+    background: rgba(10,24,48,0.85);
+    border: 1px solid rgba(29,95,232,0.25);
+    border-radius: 24px;
+    padding: 50px;
+    width: 440px;
+    backdrop-filter: blur(24px);
+    box-shadow: 0 40px 100px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.06);
+    animation: loginIn 0.4s ease both;
+  }
+  @keyframes loginIn { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+
+  .login-logo {
+    display:flex; align-items:center; gap:12px; margin-bottom:8px;
+  }
+
+  .login-logo .pulse-ring {
+    width:40px; height:40px; position:relative;
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  .login-logo .pulse-ring::before {
+    content:'❤'; font-size:20px;
+    animation: heartbeat 1.5s ease-in-out infinite;
+  }
+
+  @keyframes heartbeat {
+    0%,100%{ transform:scale(1); }
+    14%{ transform:scale(1.2); }
+    28%{ transform:scale(1); }
+    42%{ transform:scale(1.15); }
+  }
+
+  .login-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    color: var(--white);
+    margin-bottom: 4px;
+  }
+
+  .login-subtitle {
+    font-size: 13px;
+    color: var(--gray);
+    margin-bottom: 36px;
+    letter-spacing: 0.5px;
+  }
+
+  .lang-selector {
+    display:flex; gap:8px; margin-bottom:28px;
+  }
+
+  .lang-btn {
+    flex:1; padding:8px; border-radius:8px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--gray);
+    cursor:pointer; font-size:13px;
+    font-family: 'Syne', sans-serif;
+    transition: all 0.2s;
+  }
+
+  .lang-btn.active {
+    border-color: var(--blue);
+    background: rgba(29,95,232,0.15);
+    color: var(--white);
+  }
+
+  .form-group { margin-bottom:20px; }
+
+  .form-label {
+    display:block; font-size:12px;
+    color: var(--gray); margin-bottom:8px;
+    text-transform:uppercase; letter-spacing:1px;
+  }
+
+  .form-input {
+    width:100%; padding:14px 16px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius:12px; color:var(--white);
+    font-family:'JetBrains Mono',monospace; font-size:14px;
+    transition: all 0.2s;
+    outline:none;
+  }
+  .form-input:focus {
+    border-color: rgba(29,95,232,0.5);
+    background: rgba(29,95,232,0.06);
+    box-shadow: 0 0 0 3px rgba(29,95,232,0.1);
+  }
+
+  .patient-fields {
+    display:none;
+    background: rgba(29,95,232,0.05);
+    border: 1px solid rgba(29,95,232,0.2);
+    border-radius:12px; padding:16px;
+    margin-bottom:20px;
+  }
+
+  .patient-fields.show { display:block; }
+
+  .patient-fields .form-group { margin-bottom:12px; }
+  .patient-fields .form-group:last-child { margin-bottom:0; }
+
+  .row2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+  .btn-login {
+    width:100%; padding:15px;
+    background: linear-gradient(135deg, var(--blue), var(--teal));
+    border:none; border-radius:12px;
+    color:white; font-size:15px; font-weight:600;
+    cursor:pointer; font-family:'Syne',sans-serif;
+    transition: all 0.3s;
+    box-shadow: 0 4px 20px rgba(29,95,232,0.4);
+  }
+
+  .btn-login:hover { transform:translateY(-2px); box-shadow:0 8px 30px rgba(29,95,232,0.5); }
+
+  .login-error {
+    color: var(--red); font-size:13px;
+    text-align:center; margin-top:12px; display:none;
+  }
+
+  /* ══ MAIN APP ══ */
+  #app { display:none; position:relative; z-index:1; }
+
+  /* ── HEADER ── */
+  .header {
+    position:sticky; top:0; z-index:50;
+    background: rgba(5,13,26,0.9);
+    backdrop-filter: blur(24px);
+    border-bottom: 1px solid rgba(29,95,232,0.12);
+    padding: 0 32px;
+    height: 64px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+
+  .header-left { display:flex; align-items:center; gap:20px; }
+
+  .logo {
+    display:flex; align-items:center; gap:10px;
+    font-family:'DM Serif Display',serif; font-size:21px;
+    letter-spacing:-0.5px;
+  }
+
+  .logo-dot {
+    width:8px; height:8px; border-radius:50%;
+    background: var(--green);
+    box-shadow: 0 0 12px var(--green);
+    animation: blink 2s ease-in-out infinite;
+  }
+
+  @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+
+  .badge-doctor {
+    background: rgba(29,95,232,0.15);
+    border: 1px solid rgba(29,95,232,0.3);
+    color: var(--blue2);
+    padding: 4px 12px; border-radius:20px;
+    font-size:11px; font-weight:600; letter-spacing:0.5px;
+    font-family:'JetBrains Mono',monospace;
+  }
+
+  .header-right { display:flex; align-items:center; gap:14px; }
+
+  .patient-info-bar {
+    display:flex; align-items:center; gap:12px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius:10px; padding:8px 16px;
+    font-size:13px;
+    font-family:'JetBrains Mono',monospace;
+  }
+
+  .patient-info-bar span { color:var(--gray); }
+  .patient-info-bar strong { color:var(--white); }
+
+  .btn-logout {
+    padding:8px 16px; border-radius:9px;
+    border: 1px solid rgba(239,68,68,0.25);
+    background: rgba(239,68,68,0.08);
+    color: #FCA5A5; cursor:pointer;
+    font-size:12px; font-family:'JetBrains Mono',monospace;
+    transition: all 0.2s;
+  }
+
+  .btn-logout:hover { background:rgba(239,68,68,0.16); border-color:rgba(239,68,68,0.4); }
+
+  /* ── SIDEBAR LAYOUT ── */
+  #app { display:flex; flex-direction:column; min-height:100vh; }
+  .app-body { display:flex; flex:1; overflow:hidden; }
+
+  .sidebar {
+    width:220px; flex-shrink:0;
+    background:rgba(5,13,26,0.97);
+    border-right:1px solid rgba(29,95,232,0.12);
+    padding:20px 12px; display:flex; flex-direction:column; gap:3px;
+    position:sticky; top:62px; height:calc(100vh - 62px); overflow-y:auto;
+  }
+
+  .sidebar-section-label {
+    font-size:9px; text-transform:uppercase; letter-spacing:2.5px;
+    color:rgba(122,147,180,0.45); padding:10px 10px 5px;
+    font-family:'JetBrains Mono',monospace;
+  }
+
+  .nav-tabs { display:none; }
+
+  .nav-tab {
+    display:flex; align-items:center; gap:11px;
+    padding:10px 12px; border-radius:11px;
+    border:1px solid transparent;
+    background:transparent; color:var(--gray);
+    cursor:pointer; font-size:13px; font-weight:500;
+    font-family:'Syne',sans-serif; letter-spacing:0.2px;
+    transition:all 0.2s; width:100%; text-align:left;
+  }
+
+  .nav-tab .ti { font-size:15px; width:20px; text-align:center; flex-shrink:0; }
+  .nav-tab .tl { flex:1; }
+  .nav-tab .tb {
+    background:rgba(239,68,68,0.2); color:#FCA5A5;
+    font-size:9px; padding:2px 6px; border-radius:10px;
+    font-family:'JetBrains Mono',monospace; font-weight:700;
+  }
+
+  .nav-tab.active {
+    background:linear-gradient(135deg,rgba(29,95,232,0.2),rgba(14,165,233,0.1));
+    border-color:rgba(29,95,232,0.35); color:var(--white);
+    box-shadow:0 4px 16px rgba(29,95,232,0.15);
+  }
+
+  .nav-tab.active .ti { filter:drop-shadow(0 0 5px rgba(59,130,246,0.7)); }
+  .nav-tab:hover:not(.active) {
+    color:var(--white); background:rgba(255,255,255,0.05);
+    border-color:rgba(255,255,255,0.07);
+  }
+
+  .sidebar-divider { height:1px; background:rgba(255,255,255,0.05); margin:6px 4px; }
+
+  .slw {
+    margin-top:auto; padding:14px;
+    background:rgba(29,95,232,0.08);
+    border:1px solid rgba(29,95,232,0.18); border-radius:14px;
+  }
+  .slw-label { font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--gray); font-family:'JetBrains Mono',monospace; margin-bottom:10px; }
+  .slw-row { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px; }
+  .slw-key { font-size:11px; color:var(--gray); }
+  .slw-val { font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:600; }
+
+  /* ── CONTENT ── */
+  .content { padding:28px 32px; flex:1; overflow-y:auto; min-width:0; }
+
+  .tab-panel { display:none; }
+  .tab-panel.active { display:block; animation:tabIn 0.2s ease; }
+  @keyframes tabIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ── GRID ── */
+  .grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:22px; }
+  .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:22px; margin-bottom:22px; }
+  .grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:22px; }
+
+  /* ── CARDS ── */
+  .card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius:18px; padding:22px;
+    backdrop-filter:blur(10px);
+    transition:border-color 0.2s;
+  }
+  .card:hover { border-color:rgba(29,95,232,0.2); }
+
+  .card-title {
+    font-size:10px; text-transform:uppercase;
+    letter-spacing:2.5px; color:var(--gray);
+    margin-bottom:16px; font-family:'JetBrains Mono',monospace;
+    display:flex; align-items:center; gap:8px;
+  }
+  .card-title::before {
+    content:''; display:inline-block;
+    width:12px; height:2px; border-radius:1px;
+    background:var(--blue); flex-shrink:0;
+  }
+
+  /* ── METRIC CARDS ── */
+  .metric-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius:18px; padding:22px;
+    position:relative; overflow:hidden;
+    transition: all 0.3s;
+  }
+  .metric-card::before {
+    content:''; position:absolute; top:0; left:0; width:3px; height:100%;
+    border-radius:18px 0 0 18px;
+    background:linear-gradient(180deg,var(--blue),var(--teal));
+    opacity:0; transition:opacity 0.3s;
+  }
+  .metric-card:hover { transform:translateY(-4px); border-color:rgba(29,95,232,0.3); box-shadow:0 16px 40px rgba(0,0,0,0.35); }
+  .metric-card:hover::before { opacity:1; }
+
+  .metric-card .icon {
+    width:42px; height:42px; border-radius:12px;
+    background:rgba(29,95,232,0.12); border:1px solid rgba(29,95,232,0.2);
+    display:flex; align-items:center; justify-content:center;
+    font-size:20px; margin-bottom:16px;
+  }
+
+  .metric-value {
+    font-family:'DM Serif Display',serif;
+    font-size:42px; line-height:1;
+    margin-bottom:4px;
+    transition:color 0.3s;
+  }
+
+  .metric-unit { font-size:12px; color:var(--gray); font-family:'JetBrains Mono',monospace; letter-spacing:0.5px; }
+  .metric-label { font-size:11px; color:var(--gray); margin-top:10px; letter-spacing:0.5px; }
+
+  .metric-status {
+    display:inline-flex; align-items:center; gap:6px;
+    padding:4px 10px; border-radius:20px;
+    font-size:10px; font-weight:700; letter-spacing:1px;
+    margin-top:12px; font-family:'JetBrains Mono',monospace;
+  }
+
+  .status-normal { background:rgba(16,185,129,0.12); color:#6EE7B7; border:1px solid rgba(16,185,129,0.2); }
+  .status-warning { background:rgba(245,158,11,0.12); color:#FCD34D; border:1px solid rgba(245,158,11,0.2); }
+  .status-danger  { background:rgba(239,68,68,0.12); color:#FCA5A5; border:1px solid rgba(239,68,68,0.2); }
+
+  /* ── CHART ── */
+  .chart-container {
+    position:relative; height:240px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius:18px; padding:20px;
+    overflow:hidden;
+    transition:border-color 0.2s;
+  }
+  .chart-container:hover { border-color:rgba(29,95,232,0.2); }
+
+  canvas { width:100%!important; }
+
+  /* ── VITAL SIGN LIVE ── */
+  .vital-live {
+    display:flex; align-items:center; gap:16px;
+    padding:16px 20px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius:13px; margin-bottom:10px;
+    transition:border-color 0.2s;
+  }
+  .vital-live:hover { border-color:rgba(29,95,232,0.2); }
+
+  .vital-live .vl-icon { font-size:24px; }
+  .vital-live .vl-label { font-size:11px; color:var(--gray); font-family:'JetBrains Mono',monospace; letter-spacing:0.5px; }
+  .vital-live .vl-value { font-size:24px; font-weight:600; font-family:'JetBrains Mono',monospace; }
+  .vital-live .vl-unit  { font-size:11px; color:var(--gray); font-family:'JetBrains Mono',monospace; }
+  .vital-live .vl-bar   { flex:1; height:5px; background:rgba(255,255,255,0.08); border-radius:3px; overflow:hidden; }
+  .vital-live .vl-fill  { height:100%; border-radius:3px; transition:width 0.5s; }
+
+  /* ── OMS NORMS ── */
+  .oms-row {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 0; border-bottom:1px solid rgba(255,255,255,0.05);
+  }
+  .oms-row:last-child { border-bottom:none; }
+  .oms-param { font-size:13px; color:var(--gray); }
+  .oms-range { font-family:'JetBrains Mono',monospace; font-size:12px; }
+
+  /* ── PATIENTS TABLE ── */
+  .table { width:100%; border-collapse:collapse; }
+  .table th {
+    text-align:left; padding:12px 16px;
+    font-size:10px; color:var(--gray);
+    text-transform:uppercase; letter-spacing:1.5px;
+    border-bottom:1px solid rgba(255,255,255,0.07);
+    font-family:'JetBrains Mono',monospace;
+  }
+  .table td {
+    padding:14px 16px; font-size:13px;
+    border-bottom:1px solid rgba(255,255,255,0.04);
+  }
+  .table tr:hover td { background:rgba(29,95,232,0.04); }
+
+  /* ── ANNOTATIONS ── */
+  .annotation-item {
+    padding:14px;
+    background:rgba(29,95,232,0.05);
+    border:1px solid rgba(29,95,232,0.12);
+    border-left:3px solid var(--blue);
+    border-radius:10px; margin-bottom:10px;
+    transition:border-color 0.2s;
+  }
+  .annotation-item:hover { border-color:rgba(29,95,232,0.25); border-left-color:var(--blue2); }
+
+  .annotation-meta { font-size:10px; color:var(--gray); margin-bottom:6px; font-family:'JetBrains Mono',monospace; letter-spacing:0.5px; }
+  .annotation-text { font-size:14px; line-height:1.5; }
+
+  .textarea-annotation {
+    width:100%; min-height:100px; padding:14px;
+    background:rgba(255,255,255,0.04);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:12px; color:var(--white);
+    font-family:'Syne',sans-serif; font-size:14px;
+    resize:vertical; outline:none;
+    transition:all 0.2s;
+  }
+
+  .textarea-annotation:focus { border-color:rgba(29,95,232,0.4); background:rgba(29,95,232,0.04); box-shadow:0 0 0 3px rgba(29,95,232,0.08); }
+
+  /* ── BUTTONS ── */
+  .btn {
+    padding:10px 20px; border-radius:10px;
+    border:none; cursor:pointer;
+    font-family:'Syne',sans-serif; font-size:13px; font-weight:600;
+    transition:all 0.2s; display:inline-flex; align-items:center; gap:8px;
+  }
+
+  .btn-primary {
+    background:linear-gradient(135deg,var(--blue) 0%,var(--teal) 100%);
+    color:white; box-shadow:0 4px 20px rgba(29,95,232,0.3);
+    position:relative; overflow:hidden;
+  }
+  .btn-primary::after {
+    content:''; position:absolute; inset:0;
+    background:linear-gradient(135deg,rgba(255,255,255,0.1),transparent);
+    opacity:0; transition:opacity 0.2s;
+  }
+  .btn-primary:hover { transform:translateY(-2px); box-shadow:0 8px 28px rgba(29,95,232,0.5); }
+  .btn-primary:hover::after { opacity:1; }
+
+  .btn-success {
+    background:rgba(16,185,129,0.12);
+    border:1px solid rgba(16,185,129,0.25);
+    color:#6EE7B7;
+  }
+
+  .btn-success:hover { background:rgba(16,185,129,0.2); }
+
+  .btn-amber {
+    background:rgba(245,158,11,0.12);
+    border:1px solid rgba(245,158,11,0.25);
+    color:#FCD34D;
+  }
+
+  /* ── AFIB ALERT ── */
+  .afib-alert {
+    display:none;
+    background:rgba(239,68,68,0.08);
+    border:1px solid rgba(239,68,68,0.5);
+    border-left:4px solid #EF4444;
+    border-radius:14px; padding:16px 20px;
+    margin-bottom:20px;
+    animation:pulse-red 2s ease-in-out infinite;
+    backdrop-filter:blur(10px);
+  }
+
+  .afib-alert.show { display:flex; align-items:center; gap:12px; }
+
+  @keyframes pulse-red {
+    0%,100%{ box-shadow:0 0 0 0 rgba(239,68,68,0.3); }
+    50%{ box-shadow:0 0 0 8px rgba(239,68,68,0); }
+  }
+
+  /* ── PDF SECTION ── */
+  .pdf-preview {
+    background:white; color:#1a1a1a;
+    border-radius:12px; padding:40px;
+    font-family:'Syne',sans-serif;
+    box-shadow:0 20px 60px rgba(0,0,0,0.5);
+  }
+
+  .pdf-header {
+    display:flex; justify-content:space-between; align-items:flex-start;
+    border-bottom:3px solid #1D5FE8; padding-bottom:20px; margin-bottom:24px;
+  }
+
+  .pdf-logo { font-family:'DM Serif Display',serif; font-size:28px; color:#0A1628; }
+  .pdf-logo span { color:#1D5FE8; }
+  .pdf-subtitle { font-size:12px; color:#64748B; margin-top:2px; }
+  .pdf-date { font-size:12px; color:#64748B; text-align:right; }
+
+  .pdf-section-title {
+    font-size:11px; text-transform:uppercase; letter-spacing:1.5px;
+    color:#1D5FE8; margin-bottom:12px; margin-top:20px;
+    padding-bottom:6px; border-bottom:1px solid #E2E8F0;
+  }
+
+  .pdf-grid2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .pdf-field { margin-bottom:10px; }
+  .pdf-field label { font-size:11px; color:#94A3B8; display:block; margin-bottom:3px; }
+  .pdf-field value { font-size:14px; color:#1E2D40; font-weight:500; }
+
+  .pdf-vitals { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:16px 0; }
+
+  .pdf-vital-box {
+    background:#F8FAFF; border:1px solid #E2E8F0;
+    border-radius:8px; padding:14px; text-align:center;
+  }
+
+  .pdf-vital-box .val { font-size:28px; font-weight:700; color:#1D5FE8; font-family:'DM Serif Display',serif; }
+  .pdf-vital-box .lbl { font-size:11px; color:#94A3B8; margin-top:4px; }
+  .pdf-vital-box .status-badge {
+    display:inline-block; padding:2px 8px;
+    border-radius:10px; font-size:10px; font-weight:600;
+    margin-top:6px;
+  }
+
+  .pdf-recommendation {
+    background:#F0FDF4; border:1px solid #BBF7D0;
+    border-left:4px solid #10B981;
+    border-radius:8px; padding:14px; margin-top:12px;
+    font-size:13px; color:#065F46; line-height:1.6;
+  }
+
+  .pdf-annotation-box {
+    background:#EFF6FF; border:1px solid #BFDBFE;
+    border-radius:8px; padding:14px; margin-top:12px;
+    font-size:13px; color:#1E40AF; min-height:60px;
+  }
+
+  .pdf-footer {
+    margin-top:30px; padding-top:16px;
+    border-top:1px solid #E2E8F0;
+    display:flex; justify-content:space-between; align-items:center;
+  }
+
+  .pdf-signature { text-align:right; }
+  .pdf-signature .sig-line { border-bottom:1px solid #1D5FE8; width:200px; margin-bottom:6px; height:40px; }
+  .pdf-signature p { font-size:11px; color:#64748B; }
+
+  /* ── EMAIL MODAL ── */
+  .modal-overlay {
+    display:none; position:fixed; inset:0; z-index:200;
+    background:rgba(0,0,0,0.7); backdrop-filter:blur(4px);
+    align-items:center; justify-content:center;
+  }
+
+  .modal-overlay.show { display:flex; }
+
+  .modal {
+    background:var(--navy2);
+    border:1px solid rgba(29,95,232,0.2);
+    border-radius:22px; padding:34px;
+    width:460px; max-width:90vw;
+    box-shadow:0 40px 100px rgba(0,0,0,0.7);
+    animation:modalIn 0.25s ease;
+  }
+  @keyframes modalIn { from{opacity:0;transform:scale(0.95)} to{opacity:1;transform:scale(1)} }
+
+  .modal h3 { font-family:'DM Serif Display',serif; font-size:22px; margin-bottom:20px; letter-spacing:-0.3px; }
+
+  .toast {
+    position:fixed; bottom:24px; right:24px; z-index:300;
+    background:rgba(16,185,129,0.95); color:white;
+    padding:14px 22px; border-radius:14px;
+    font-size:13px; font-weight:500;
+    transform:translateY(100px); opacity:0;
+    transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    box-shadow:0 10px 40px rgba(16,185,129,0.4);
+    backdrop-filter:blur(10px);
+    border:1px solid rgba(255,255,255,0.15);
+    display:flex; align-items:center; gap:8px;
+  }
+  .toast.show { transform:translateY(0); opacity:1; }
+
+  /* ── HISTORY SESSION ── */
+  .session-card {
+    background:rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.07);
+    border-radius:14px; padding:18px;
+    margin-bottom:10px;
+    transition:all 0.2s;
+  }
+
+  .session-card:hover { border-color:rgba(29,95,232,0.3); background:rgba(29,95,232,0.04); }
+
+  .session-header {
+    display:flex; justify-content:space-between;
+    align-items:center; margin-bottom:10px;
+  }
+
+  .session-date { font-size:13px; font-weight:500; }
+  .session-duration { font-size:12px; color:var(--gray); }
+
+  .session-vitals { display:flex; gap:20px; }
+  .session-vital { text-align:center; }
+  .session-vital .sv-val { font-size:20px; font-weight:600; font-family:'JetBrains Mono',monospace; }
+  .session-vital .sv-lbl { font-size:11px; color:var(--gray); }
+
+  /* ── IMC INDICATOR ── */
+  .imc-bar {
+    height:8px; border-radius:4px;
+    background:linear-gradient(to right, #3B82F6 0%, #10B981 25%, #F59E0B 60%, #EF4444 100%);
+    position:relative; margin:8px 0;
+  }
+
+  .imc-pointer {
+    width:14px; height:14px;
+    background:white; border-radius:50%;
+    position:absolute; top:-3px;
+    transform:translateX(-50%);
+    box-shadow:0 2px 6px rgba(0,0,0,0.3);
+    transition:left 0.5s;
+  }
+
+  /* RTL for Arabic */
+  .rtl { direction:rtl; text-align:right; }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width:5px; height:5px; }
+  ::-webkit-scrollbar-track { background:rgba(255,255,255,0.02); }
+  ::-webkit-scrollbar-thumb { background:rgba(29,95,232,0.3); border-radius:3px; }
+  ::-webkit-scrollbar-thumb:hover { background:rgba(29,95,232,0.5); }
+
+  @media(max-width:768px) {
+    .grid-4,.grid-3 { grid-template-columns:1fr 1fr; }
+    .grid-2 { grid-template-columns:1fr; }
+    .content { padding:16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN PAGE ══ -->
+<div id="loginPage">
+  <div class="login-card" id="loginCard">
+    <div class="login-logo">
+      <div class="pulse-ring"></div>
+      <div>
+        <div class="login-title">MediSense</div>
+      </div>
+    </div>
+    <p class="login-subtitle" id="loginSubtitle">Interface Médecin — Accès sécurisé</p>
+
+    <!-- Language -->
+    <div class="lang-selector">
+      <button class="lang-btn active" onclick="setLang('fr')">🇫🇷 Français</button>
+      <button class="lang-btn" onclick="setLang('en')">🇬🇧 English</button>
+      <button class="lang-btn" onclick="setLang('ar')">🇲🇦 العربية</button>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" id="lbl-login">Identifiant</label>
+      <input class="form-input" id="inputUser" placeholder="doctor" />
+    </div>
+    <div class="form-group">
+      <label class="form-label" id="lbl-pass">Mot de passe</label>
+      <div style="position:relative">
+        <input class="form-input" type="password" id="inputPass" placeholder="••••••••••••••" style="padding-right:44px"/>
+        <button onclick="togglePass()" type="button" id="eyeBtn"
+          style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;color:#94A3B8;line-height:1;padding:0">
+          👁️
+        </button>
+      </div>
+    </div>
+
+    <button class="btn-login" id="btnLogin" onclick="doLogin()">
+      <span id="btn-login-text">Connexion</span>
+    </button>
+    <p class="login-error" id="loginError">Identifiants incorrects</p>
+  </div>
+</div>
+
+<!-- ══ MAIN APP ══ -->
+<div id="app">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-left">
+      <div class="logo">
+        <div class="logo-dot"></div>
+        Medi<span style="color:var(--blue2)">Sense</span>
+      </div>
+      <span class="badge-doctor">👨‍⚕️ Interface Médecin</span>
+    </div>
+    <div class="header-right">
+      <div class="patient-info-bar">
+        <span id="headerPatientName">—</span>
+        <span>|</span>
+        <span id="headerPatientAge">—</span>
+        <span>|</span>
+        <span>IMC: </span><strong id="headerIMC">—</strong>
+      </div>
+      <button class="btn-logout" onclick="doLogout()">⏻ Déconnexion</button>
+    </div>
+  </header>
+
+  <!-- NAV -->
+  <nav class="nav-tabs"></nav>
+
+  <div class="app-body">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-section-label">Navigation</div>
+    <button class="nav-tab active" onclick="showTab('vitals',this)">
+      <span class="ti">📊</span><span class="tl">Surveillance</span>
+    </button>
+    <button class="nav-tab" onclick="showTab('patients',this)">
+      <span class="ti">👥</span><span class="tl">Patients</span>
+    </button>
+    <button class="nav-tab" onclick="showTab('annotations',this)">
+      <span class="ti">✏️</span><span class="tl">Annotations</span>
+    </button>
+    <button class="nav-tab" onclick="showTab('rapport',this)">
+      <span class="ti">📄</span><span class="tl">Rapport PDF</span>
+    </button>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section-label">Administration</div>
+    <button class="nav-tab" onclick="showTab('admin',this)">
+      <span class="ti">⚙️</span><span class="tl">Admin</span>
+    </button>
+    <div class="sidebar-divider" style="margin-top:16px"></div>
+    <div class="slw" id="sidebarLive">
+      <div class="slw-label">Live — Patient actif</div>
+      <div id="sidebarPatientName" style="font-size:12px;color:var(--white);margin-bottom:10px;font-weight:600">— Aucun —</div>
+      <div class="slw-row">
+        <span class="slw-key">BPM</span>
+        <span class="slw-val" id="sidebarBpm" style="color:#EF4444">--</span>
+      </div>
+      <div class="slw-row">
+        <span class="slw-key">SpO2</span>
+        <span class="slw-val" id="sidebarSpo2" style="color:#3B82F6">--</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ══ TAB: VITALS ══ -->
+  <div class="content">
+    <div id="tab-vitals" class="tab-panel active">
+      <div class="page-title">Surveillance temps réel <small>LIVE · 2s</small></div>
+
+      <!-- AFib Alert -->
+      <div class="afib-alert" id="afibAlert">
+        <span style="font-size:24px">⚠️</span>
+        <div>
+          <strong style="color:#FCA5A5">Fibrillation Auriculaire Suspectée</strong>
+          <p style="font-size:13px;color:#FCA5A5;opacity:0.8;margin-top:2px">Rythme irrégulier détecté — Surveillance accrue recommandée</p>
+        </div>
+      </div>
+
+      <!-- Metric Cards -->
+      <div class="grid-4">
+        <div class="metric-card">
+          <div class="icon">❤️</div>
+          <div class="metric-value" id="bpmValue" style="color:#EF4444">--</div>
+          <div class="metric-unit">BPM</div>
+          <div class="metric-label">Fréquence cardiaque</div>
+          <div class="metric-status status-normal" id="bpmStatus">⬤ Chargement...</div>
+        </div>
+        <div class="metric-card">
+          <div class="icon">🩸</div>
+          <div class="metric-value" id="spo2Value" style="color:#3B82F6">--</div>
+          <div class="metric-unit">%</div>
+          <div class="metric-label">Saturation SpO2</div>
+          <div class="metric-status status-normal" id="spo2Status">⬤ Chargement...</div>
+        </div>
+        <div class="metric-card">
+          <div class="icon">📊</div>
+          <div class="metric-value" id="imcValue" style="color:#10B981">--</div>
+          <div class="metric-unit">kg/m²</div>
+          <div class="metric-label">Indice de Masse Corporelle</div>
+          <div class="metric-status" id="imcStatus">⬤ --</div>
+          <div class="imc-bar" style="margin-top:10px">
+            <div class="imc-pointer" id="imcPointer" style="left:40%"></div>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="icon">🧠</div>
+          <div class="metric-value" id="stressValue" style="color:#F59E0B;font-size:24px">--</div>
+          <div class="metric-unit">Score de risque</div>
+          <div class="metric-label">NEWS2 Partiel</div>
+          <div class="metric-status" id="stressStatus">⬤ --</div>
+        </div>
+      </div>
+
+      <!-- Chart + OMS -->
+      <div class="grid-2">
+        <div>
+          <div class="chart-container">
+            <div class="card-title">📈 Historique BPM — Temps réel</div>
+            <canvas id="bpmChart"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">📋 Normes OMS</div>
+          <div class="oms-row">
+            <div>
+              <div class="oms-param">FC Normale</div>
+              <div style="font-size:11px;color:var(--gray)">Adulte au repos</div>
+            </div>
+            <div class="oms-range" style="color:#6EE7B7">60 – 100 BPM</div>
+          </div>
+          <div class="oms-row">
+            <div>
+              <div class="oms-param">Bradycardie</div>
+            </div>
+            <div class="oms-range" style="color:#FCD34D">&lt; 60 BPM</div>
+          </div>
+          <div class="oms-row">
+            <div>
+              <div class="oms-param">Tachycardie</div>
+            </div>
+            <div class="oms-range" style="color:#FCA5A5">&gt; 100 BPM</div>
+          </div>
+          <div class="oms-row">
+            <div>
+              <div class="oms-param">SpO2 Normale</div>
+            </div>
+            <div class="oms-range" style="color:#6EE7B7">≥ 95%</div>
+          </div>
+          <div class="oms-row">
+            <div>
+              <div class="oms-param">Hypoxémie légère</div>
+            </div>
+            <div class="oms-range" style="color:#FCD34D">90 – 94%</div>
+          </div>
+          <div class="oms-row">
+            <div>
+              <div class="oms-param">Hypoxémie sévère</div>
+            </div>
+            <div class="oms-range" style="color:#FCA5A5">&lt; 90%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live vitals bars -->
+      <div class="grid-2">
+        <div>
+          <div class="vital-live">
+            <span class="vl-icon">❤️</span>
+            <div style="flex:1">
+              <div class="vl-label">BPM</div>
+              <div style="display:flex;align-items:baseline;gap:4px">
+                <span class="vl-value" id="bpmLive">--</span>
+                <span class="vl-unit">bpm</span>
+              </div>
+              <div class="vl-bar" style="margin-top:6px">
+                <div class="vl-fill" id="bpmFill" style="width:0%;background:linear-gradient(to right,#10B981,#EF4444)"></div>
+              </div>
+            </div>
+          </div>
+          <div class="vital-live">
+            <span class="vl-icon">🩸</span>
+            <div style="flex:1">
+              <div class="vl-label">SpO2</div>
+              <div style="display:flex;align-items:baseline;gap:4px">
+                <span class="vl-value" id="spo2Live">--</span>
+                <span class="vl-unit">%</span>
+              </div>
+              <div class="vl-bar" style="margin-top:6px">
+                <div class="vl-fill" id="spo2Fill" style="width:0%;background:linear-gradient(to right,#EF4444,#3B82F6)"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">📊 Statistiques session</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div style="text-align:center;padding:12px;background:var(--card);border-radius:8px;border:1px solid var(--border)">
+              <div style="font-size:22px;font-weight:600;color:#EF4444;font-family:'JetBrains Mono',monospace" id="bpmMin">--</div>
+              <div style="font-size:11px;color:var(--gray)">BPM Min</div>
+            </div>
+            <div style="text-align:center;padding:12px;background:var(--card);border-radius:8px;border:1px solid var(--border)">
+              <div style="font-size:22px;font-weight:600;color:#EF4444;font-family:'JetBrains Mono',monospace" id="bpmMax">--</div>
+              <div style="font-size:11px;color:var(--gray)">BPM Max</div>
+            </div>
+            <div style="text-align:center;padding:12px;background:var(--card);border-radius:8px;border:1px solid var(--border)">
+              <div style="font-size:22px;font-weight:600;color:#3B82F6;font-family:'JetBrains Mono',monospace" id="spo2Min">--</div>
+              <div style="font-size:11px;color:var(--gray)">SpO2 Min</div>
+            </div>
+            <div style="text-align:center;padding:12px;background:var(--card);border-radius:8px;border:1px solid var(--border)">
+              <div style="font-size:22px;font-weight:600;color:#3B82F6;font-family:'JetBrains Mono',monospace" id="spo2Avg">--</div>
+              <div style="font-size:11px;color:var(--gray)">SpO2 Moy</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ TAB: PATIENTS ══ -->
+    <div id="tab-patients" class="tab-panel">
+      <div class="page-title">Patients enregistrés <small>DOSSIERS</small></div>
+      <div class="card">
+        <div class="card-title">👥 Patients enregistrés</div>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Nom</th><th>Âge</th><th>Sexe</th>
+              <th>Poids</th><th>Taille</th><th>IMC</th>
+              <th>Dernière session</th><th>Statut</th>
+            </tr>
+          </thead>
+          <tbody id="patientsTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══ TAB: ANNOTATIONS ══ -->
+    <div id="tab-annotations" class="tab-panel">
+      <div class="page-title">Annotations médicales <small>OBSERVATIONS</small></div>
+      <div class="grid-2">
+        <div>
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-title">✏️ Nouvelle observation médicale</div>
+            <textarea class="textarea-annotation" id="annotationText"
+              placeholder="Observations cliniques, recommandations, notes de suivi..."></textarea>
+            <div style="display:flex;gap:10px;margin-top:12px">
+              <button class="btn btn-primary" onclick="addAnnotation()">💾 Enregistrer</button>
+              <button class="btn btn-amber" onclick="document.getElementById('annotationText').value=''">🗑 Effacer</button>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">📋 Historique des annotations</div>
+          <div id="annotationsList" style="max-height:400px;overflow-y:auto">
+            <p style="color:var(--gray);font-size:13px;text-align:center;padding:20px">Aucune annotation pour le moment</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ TAB: RAPPORT ══ -->
+    <div id="tab-rapport" class="tab-panel">
+      <div class="page-title">Rapport médical <small>PDF · EMAIL</small></div>
+      <div class="grid-2">
+        <div>
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-title">⚙️ Options du rapport</div>
+            <div class="form-group" style="margin-bottom:16px">
+              <label class="form-label">Langue du rapport</label>
+              <select class="form-input" id="reportLang" style="background:#1E293B;color:white;border:1px solid rgba(255,255,255,0.15);cursor:pointer">
+                <option value="fr" style="background:#1E293B;color:white">🇫🇷 Français</option>
+                <option value="en" style="background:#1E293B;color:white">🇬🇧 English</option>
+                <option value="ar" style="background:#1E293B;color:white">🇲🇦 العربية</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom:16px">
+              <label class="form-label">Nom du médecin</label>
+              <input class="form-input" id="doctorName" placeholder="Dr. ..." value="Dr. MediSense" />
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <button class="btn btn-primary" onclick="generatePDF()">📄 Générer PDF</button>
+              <button class="btn btn-success" onclick="showEmailModal()">📧 Envoyer par email</button>
+              <button class="btn btn-amber" onclick="printReport()">🖨️ Imprimer</button>
+            </div>
+          </div>
+
+          <!-- Session History -->
+          <div class="card">
+            <div class="card-title">🕐 Historique des sessions</div>
+            <div id="sessionHistory"></div>
+          </div>
+        </div>
+
+        <!-- PDF Preview -->
+        <div>
+          <div style="font-size:12px;color:var(--gray);margin-bottom:12px;text-transform:uppercase;letter-spacing:1px">Aperçu du rapport</div>
+          <div class="pdf-preview" id="pdfPreview">
+            <!-- Generated dynamically -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ TAB: ADMIN ══ -->
+    <div id="tab-admin" class="tab-panel">
+      <div class="page-title">Administration <small>GESTION</small></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+        <div>
+          <div style="font-family:'DM Serif Display',serif;font-size:22px">⚙️ Administration</div>
+          <div style="font-size:13px;color:var(--gray);margin-top:4px" id="adminSubtitle">Gestion des patients enregistrés</div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="loadAdminPatients()">🔄 Actualiser</button>
+          <button class="btn btn-amber" onclick="exportAllCSV()">📥 Exporter tout CSV</button>
+        </div>
+      </div>
+
+      <!-- Live Monitor Bar -->
+      <div class="card" style="margin-bottom:20px;padding:16px 24px">
+        <div style="display:flex;align-items:center;gap:40px;flex-wrap:wrap">
+          <div>
+            <div style="font-size:11px;color:var(--gray);text-transform:uppercase;letter-spacing:1px">Patient actif</div>
+            <div style="font-size:18px;font-weight:600;margin-top:4px" id="adminLivePatient">— Aucun —</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--gray);text-transform:uppercase;letter-spacing:1px">BPM Live</div>
+            <div style="font-family:'DM Serif Display',serif;font-size:28px;color:#EF4444" id="adminLiveBpm">--</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--gray);text-transform:uppercase;letter-spacing:1px">SpO2 Live</div>
+            <div style="font-family:'DM Serif Display',serif;font-size:28px;color:#3B82F6" id="adminLiveSpo2">--</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--gray);text-transform:uppercase;letter-spacing:1px">Statut</div>
+            <div style="font-size:14px;font-weight:600" id="adminLiveStatus">⬤ En attente</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Patients Grid -->
+      <div id="adminGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px"></div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<!-- EMAIL MODAL -->
+<div class="modal-overlay" id="emailModal">
+  <div class="modal">
+    <h3>📧 Envoyer le rapport par email</h3>
+    <div class="form-group" style="margin-bottom:16px">
+      <label class="form-label">Email du patient</label>
+      <input class="form-input" id="emailTo" placeholder="patient@email.com" />
+    </div>
+    <div class="form-group" style="margin-bottom:16px">
+      <label class="form-label">Message (optionnel)</label>
+      <textarea class="textarea-annotation" id="emailMessage" style="min-height:80px"
+        placeholder="Veuillez trouver ci-joint votre rapport médical MediSense..."></textarea>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn" style="background:var(--card);border:1px solid var(--border);color:var(--gray)"
+        onclick="closeEmailModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="sendEmail()">📤 Envoyer</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- Chart.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+<script>
+// ══ STATE ══
+const NGROK = 'https://unspeedy-unmedalled-jedidiah.ngrok-free.dev';
+const HEADERS = { 'ngrok-skip-browser-warning': 'true', 'Content-Type': 'application/json' };
+
+let state = {
+  lang: 'fr',
+  loggedIn: false,
+  patient: { name:'', age:'', sex:'M', weight:'', height:'', email:'' },
+  bpm: 0, spo2: 0,
+  bpmHistory: [], spo2History: [],
+  bpmMin:999, bpmMax:0, spo2Min:100, spo2Sum:0, spo2Count:0,
+  annotations: [],
+  sessions: [],
+  afibRRIntervals: [],
+  chart: null
+};
+
+// ══ TRANSLATIONS ══
+const T = {
+  fr: {
+    subtitle: 'Interface Médecin — Accès sécurisé',
+    loginBtn: 'Connexion',
+    errorLogin: 'Identifiants incorrects',
+    lblLogin: 'Identifiant', lblPass: 'Mot de passe',
+    lblPname: 'Nom complet du patient', lblPage: 'Âge', lblPsex: 'Sexe',
+    lblPweight: 'Poids (kg)', lblPheight: 'Taille (cm)', lblPemail: 'Email patient',
+  },
+  en: {
+    subtitle: 'Doctor Interface — Secure Access',
+    loginBtn: 'Login',
+    errorLogin: 'Incorrect credentials',
+    lblLogin: 'Username', lblPass: 'Password',
+    lblPname: 'Patient full name', lblPage: 'Age', lblPsex: 'Sex',
+    lblPweight: 'Weight (kg)', lblPheight: 'Height (cm)', lblPemail: 'Patient email',
+  },
+  ar: {
+    subtitle: 'واجهة الطبيب — وصول آمن',
+    loginBtn: 'تسجيل الدخول',
+    errorLogin: 'بيانات غير صحيحة',
+    lblLogin: 'اسم المستخدم', lblPass: 'كلمة المرور',
+    lblPname: 'الاسم الكامل للمريض', lblPage: 'العمر', lblPsex: 'الجنس',
+    lblPweight: 'الوزن (كغ)', lblPheight: 'الطول (سم)', lblPemail: 'بريد المريض',
+  }
+};
+
+function setLang(lang) {
+  state.lang = lang;
+  document.querySelectorAll('.lang-btn').forEach((b,i) => {
+    b.classList.toggle('active', ['fr','en','ar'][i] === lang);
+  });
+  const t = T[lang];
+  document.getElementById('loginSubtitle').textContent   = t.subtitle;
+  document.getElementById('btn-login-text').textContent  = t.loginBtn;
+  document.getElementById('loginError').textContent      = t.errorLogin;
+  document.getElementById('lbl-login').textContent       = t.lblLogin;
+  document.getElementById('lbl-pass').textContent        = t.lblPass;
+  const card = document.getElementById('loginCard');
+  if (lang === 'ar') { card.classList.add('rtl'); }
+  else { card.classList.remove('rtl'); }
+}
+
+function togglePass() {
+  const input = document.getElementById('inputPass');
+  const btn   = document.getElementById('eyeBtn');
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.textContent = '🙈';
+  } else {
+    input.type = 'password';
+    btn.textContent = '👁️';
+  }
+}
+
+// ══ LOGIN ══
+function doLogin() {
+  const user = document.getElementById('inputUser').value.trim();
+  const pass = document.getElementById('inputPass').value.trim();
+
+  if (user === 'doctor' && pass === 'MediSense@doctor') {
+    startApp();
+  } else {
+    const err = document.getElementById('loginError');
+    err.style.display = 'block';
+    setTimeout(() => err.style.display='none', 3000);
+  }
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !state.loggedIn) doLogin();
+});
+
+function startApp() {
+  state.loggedIn = true;
+  document.getElementById('loginPage').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+
+  // Load current patient from Node-RED
+  fetchCurrentPatient();
+  loadPatientsFromServer(); // ✅ Charger patients au démarrage
+
+  // Start admin live polling
+  setInterval(adminFetchLive, 2000);
+  adminFetchLive();
+
+  initChart();
+  generatePDF();
+  startPolling();
+  loadAdminPatients();
+}
+
+async function fetchCurrentPatient() {
+  try {
+    const r = await fetch(NGROK + '/patient', { headers: HEADERS });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const p = await r.json();
+
+    // ✅ FIX: accepter différentes structures de réponse Node-RED
+    const pat = Array.isArray(p) ? p[0] : p;
+
+    if (pat && (pat.name || pat.Name)) {
+      const name   = pat.name   || pat.Name   || '—';
+      const age    = pat.age    || pat.Age    || '—';
+      const gender = pat.gender || pat.Gender || pat.sex || '—';
+      const weight = pat.weight || pat.Weight || '';
+      const height = pat.height || pat.Height || '';
+      const email  = pat.email  || pat.Email  || '';
+      const imc_s  = pat.imc   || pat.IMC    || '';
+
+      state.patient = { name, age, sex: gender, weight, height, imc: imc_s, email };
+
+      const imc = calcIMC();
+      const imcDisplay = imc.val > 0 ? imc.val.toFixed(1) : (imc_s || '—');
+
+      document.getElementById('headerPatientName').textContent = '👤 ' + name;
+      document.getElementById('headerPatientAge').textContent  = age !== '—' ? age + ' ans' : '—';
+      document.getElementById('headerIMC').textContent         = imcDisplay;
+      document.getElementById('imcValue').textContent          = imcDisplay;
+      document.getElementById('imcStatus').textContent         = '⬤ ' + imc.label;
+      document.getElementById('imcStatus').className           = 'metric-status ' + imc.cls;
+      document.getElementById('imcPointer').style.left         = imc.pct + '%';
+
+      const sbN = document.getElementById('sidebarPatientName');
+      if (sbN) sbN.textContent = '👤 ' + name;
+
+      // Admin live patient
+      const adminLP = document.getElementById('adminLivePatient');
+      if (adminLP) adminLP.textContent = '👤 ' + name;
+
+      // Add to sessions table if not already there
+      const session = {
+        ...state.patient, imc: imcDisplay,
+        date: new Date().toLocaleString('fr-FR'),
+        bpmAvg: '--', spo2Avg: '--', status: '🟢 Connecté'
+      };
+      if (!state.sessions.find(s => s.name === name)) {
+        state.sessions.push(session);
+        updatePatientsTable();
+        updateSessionHistory();
+      }
+
+    } else {
+      // ✅ Pas de patient — réinitialiser proprement
+      state.patient = { name:'', age:'', sex:'', weight:'', height:'', imc:'', email:'' };
+      document.getElementById('headerPatientName').textContent = '— Aucun patient connecté —';
+      document.getElementById('headerPatientAge').textContent  = '—';
+      const sbN = document.getElementById('sidebarPatientName');
+      if (sbN) sbN.textContent = '— Aucun —';
+      const adminLP = document.getElementById('adminLivePatient');
+      if (adminLP) adminLP.textContent = '— Aucun —';
+    }
+  } catch(e) {
+    console.warn('fetchCurrentPatient error:', e.message);
+    document.getElementById('headerPatientName').textContent = '— Hors ligne —';
+  }
+  setTimeout(fetchCurrentPatient, 3000); // ✅ Réduit à 3s pour réactivité
+}
+
+function calcIMC() {
+  const w = state.patient.weight, h = state.patient.height / 100;
+  if (!w || !h) return { val:0, label:'N/A', cls:'', pct:40 };
+  const val = w / (h * h);
+  let label, cls, pct;
+  if      (val < 18.5) { label='Insuffisance pondérale'; cls='status-warning'; pct=15; }
+  else if (val < 25)   { label='Poids normal'; cls='status-normal'; pct=38; }
+  else if (val < 30)   { label='Surpoids'; cls='status-warning'; pct=62; }
+  else                 { label='Obésité'; cls='status-danger'; pct=85; }
+  return { val, label, cls, pct };
+}
+
+function doLogout() {
+  state.loggedIn = false;
+  state.bpmHistory = []; state.spo2History = [];
+  state.bpmMin=999; state.bpmMax=0; state.spo2Min=100; state.spo2Sum=0; state.spo2Count=0;
+  document.getElementById('loginPage').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('inputUser').value = '';
+  document.getElementById('inputPass').value = '';
+}
+
+// ══ TABS ══
+function showTab(id, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  const el = btn || event?.target?.closest('.nav-tab') || event?.target;
+  if (el) el.classList.add('active');
+  if (id === 'rapport')  generatePDF();
+  if (id === 'admin')    loadAdminPatients();
+  if (id === 'patients') loadPatientsFromServer(); // ✅ FIX 4
+}
+
+// ══ CHART ══
+function initChart() {
+  const ctx = document.getElementById('bpmChart').getContext('2d');
+  state.chart = new Chart(ctx, {
+    type:'line',
+    data: {
+      labels:[],
+      datasets:[{
+        label:'BPM',
+        data:[],
+        borderColor:'#EF4444',
+        backgroundColor:'rgba(239,68,68,0.1)',
+        borderWidth:2, pointRadius:3,
+        pointBackgroundColor:'#EF4444',
+        tension:0.4, fill:true
+      },{
+        label:'SpO2',
+        data:[],
+        borderColor:'#3B82F6',
+        backgroundColor:'rgba(59,130,246,0.05)',
+        borderWidth:2, pointRadius:3,
+        pointBackgroundColor:'#3B82F6',
+        tension:0.4, fill:true
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      animation:{ duration:300 },
+      plugins:{ legend:{ labels:{ color:'#94A3B8', font:{ family:'Syne' } } } },
+      scales:{
+        x:{ ticks:{ color:'#94A3B8', maxTicksLimit:8 }, grid:{ color:'rgba(255,255,255,0.05)' } },
+        y:{ ticks:{ color:'#94A3B8' }, grid:{ color:'rgba(255,255,255,0.05)' }, min:40, max:105 }
+      }
+    }
+  });
+}
+
+// ══ POLLING ══
+function startPolling() {
+  fetchData();
+  setInterval(fetchData, 2000);
+}
+
+async function fetchData() {
+  try {
+    const r = await fetch(NGROK + '/readings', { headers: HEADERS });
+    const d = await r.json();
+    if (d.bpm && d.bpm > 0) {
+      updateVitals(d.bpm, d.spo2 || 0);
+    } else {
+      showOffline('Aucun doigt détecté');
+    }
+  } catch(e) {
+    showOffline('ESP32 déconnecté');
+  }
+}
+
+function showOffline(reason) {
+  document.getElementById('bpmValue').textContent  = '--';
+  document.getElementById('spo2Value').textContent = '--';
+  document.getElementById('bpmStatus').textContent  = '⬤ ' + reason;
+  document.getElementById('bpmStatus').className   = 'metric-status';
+  document.getElementById('spo2Status').textContent = '⬤ En attente';
+  document.getElementById('spo2Status').className  = 'metric-status';
+}
+
+function updateVitals(bpm, spo2) {
+  if (bpm === 0 && spo2 === 0) return;
+
+  state.bpm = bpm; state.spo2 = spo2;
+
+  // Update mins/maxes
+  if (bpm > 0) {
+    state.bpmMin = Math.min(state.bpmMin, bpm);
+    state.bpmMax = Math.max(state.bpmMax, bpm);
+    state.bpmHistory.push(bpm);
+    if (state.bpmHistory.length > 30) state.bpmHistory.shift();
+  }
+  if (spo2 > 0) {
+    state.spo2Min = Math.min(state.spo2Min, spo2);
+    state.spo2Sum += spo2; state.spo2Count++;
+    state.spo2History.push(spo2);
+    if (state.spo2History.length > 30) state.spo2History.shift();
+  }
+
+  // Update UI
+  document.getElementById('bpmValue').textContent = bpm || '--';
+  document.getElementById('spo2Value').textContent = spo2 || '--';
+  document.getElementById('bpmLive').textContent = bpm || '--';
+  document.getElementById('spo2Live').textContent = spo2 || '--';
+  document.getElementById('bpmFill').style.width = Math.min((bpm/180)*100, 100) + '%';
+  document.getElementById('spo2Fill').style.width = Math.max(0, ((spo2-80)/20)*100) + '%';
+
+  // Stats
+  document.getElementById('bpmMin').textContent = state.bpmMin < 999 ? state.bpmMin : '--';
+  document.getElementById('bpmMax').textContent = state.bpmMax > 0 ? state.bpmMax : '--';
+  document.getElementById('spo2Min').textContent = state.spo2Min < 100 ? state.spo2Min : '--';
+  document.getElementById('spo2Avg').textContent = state.spo2Count > 0 ? Math.round(state.spo2Sum/state.spo2Count) : '--';
+
+  // BPM Status OMS
+  let bpmSt, bpmCls;
+  if (bpm < 50)      { bpmSt='🔴 Bradycardie sévère'; bpmCls='status-danger'; }
+  else if (bpm < 60) { bpmSt='🟡 Bradycardie légère'; bpmCls='status-warning'; }
+  else if (bpm <= 100){ bpmSt='🟢 Normal OMS'; bpmCls='status-normal'; }
+  else if (bpm <= 120){ bpmSt='🟡 Tachycardie légère'; bpmCls='status-warning'; }
+  else               { bpmSt='🔴 Tachycardie sévère'; bpmCls='status-danger'; }
+  document.getElementById('bpmStatus').textContent = bpmSt;
+  document.getElementById('bpmStatus').className = 'metric-status ' + bpmCls;
+
+  // SpO2 Status OMS
+  let spo2St, spo2Cls;
+  if (spo2 >= 95)      { spo2St='🟢 Normal OMS'; spo2Cls='status-normal'; }
+  else if (spo2 >= 90) { spo2St='🟡 Hypoxémie légère'; spo2Cls='status-warning'; }
+  else if (spo2 >= 85) { spo2St='🔴 Hypoxémie modérée'; spo2Cls='status-danger'; }
+  else                 { spo2St='🔴 URGENCE — Hypoxémie'; spo2Cls='status-danger'; }
+  document.getElementById('spo2Status').textContent = spo2St;
+  document.getElementById('spo2Status').className = 'metric-status ' + spo2Cls;
+
+  // NEWS2 Score partiel
+  let news2 = 0;
+  if (bpm >= 111) news2 += 3;
+  else if (bpm >= 91) news2 += 1;
+  else if (bpm <= 40) news2 += 3;
+  else if (bpm <= 50) news2 += 1;
+  if (spo2 <= 91) news2 += 3;
+  else if (spo2 <= 93) news2 += 2;
+  else if (spo2 <= 95) news2 += 1;
+
+  let newsLabel, newsCls;
+  if      (news2 === 0) { newsLabel='🟢 Risque faible'; newsCls='status-normal'; }
+  else if (news2 <= 4)  { newsLabel='🟡 Risque modéré'; newsCls='status-warning'; }
+  else                  { newsLabel='🔴 Risque élevé'; newsCls='status-danger'; }
+  document.getElementById('stressValue').textContent = news2;
+  document.getElementById('stressStatus').textContent = newsLabel;
+  document.getElementById('stressStatus').className = 'metric-status ' + newsCls;
+
+  // AFib detection (simple RR variability)
+  state.afibRRIntervals.push(60000/bpm);
+  if (state.afibRRIntervals.length > 10) state.afibRRIntervals.shift();
+  if (state.afibRRIntervals.length >= 5) {
+    const avg = state.afibRRIntervals.reduce((a,b)=>a+b,0)/state.afibRRIntervals.length;
+    const rmssd = Math.sqrt(state.afibRRIntervals.reduce((sum,rr,i,arr) => {
+      return i===0 ? sum : sum + Math.pow(rr-arr[i-1],2);
+    },0) / (state.afibRRIntervals.length-1));
+    const afib = rmssd > 50;
+    document.getElementById('afibAlert').classList.toggle('show', afib);
+  }
+
+  // ✅ Update sidebar live widget
+  const sbBpm = document.getElementById('sidebarBpm');
+  const sbSpo2 = document.getElementById('sidebarSpo2');
+  const sbName = document.getElementById('sidebarPatientName');
+  if (sbBpm) sbBpm.textContent = bpm > 0 ? Math.round(bpm) : '--';
+  if (sbSpo2) sbSpo2.textContent = spo2 > 0 ? Math.round(spo2) + '%' : '--';
+  if (sbName && state.patient.name) sbName.textContent = '👤 ' + state.patient.name;
+
+  // ✅ FIX 6: Admin live patient mis à jour en temps réel
+  const adminLP = document.getElementById('adminLivePatient');
+  if (adminLP && state.patient.name) adminLP.textContent = '👤 ' + state.patient.name;
+
+  // Update chart
+  if (state.chart) {
+    const now = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    state.chart.data.labels.push(now);
+    state.chart.data.datasets[0].data.push(bpm);
+    state.chart.data.datasets[1].data.push(spo2);
+    if (state.chart.data.labels.length > 30) {
+      state.chart.data.labels.shift();
+      state.chart.data.datasets[0].data.shift();
+      state.chart.data.datasets[1].data.shift();
+    }
+    state.chart.update('none');
+  }
+}
+
+// ══ PATIENTS TABLE ══
+async function loadPatientsFromServer() {
+  // ✅ FIX 2: charger les patients depuis Node-RED /users
+  try {
+    const r = await fetch(NGROK + '/users', { headers: HEADERS });
+    if (!r.ok) return;
+    const users = await r.json();
+    if (!users || typeof users !== 'object') return;
+    const entries = Array.isArray(users) ? users : Object.values(users);
+    entries.forEach(u => {
+      if (!u || !u.name) return;
+      if (!state.sessions.find(s => s.name === u.name)) {
+        state.sessions.push({
+          name: u.name, age: u.age || '—', sex: u.gender || '—',
+          weight: u.weight || '', height: u.height || '',
+          imc: u.imc || '—', email: u.email || '',
+          date: u.createdAt ? new Date(u.createdAt).toLocaleString('fr-FR') : '—',
+          bpmAvg: '—', spo2Avg: '—', status: '⚪ Enregistré'
+        });
+      }
+    });
+    updatePatientsTable();
+  } catch(e) { console.warn('loadPatientsFromServer:', e.message); }
+}
+
+function updatePatientsTable() {
+  const tbody = document.getElementById('patientsTable');
+  if (!state.sessions.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--gray);padding:24px">Aucun patient — vérifiez la connexion Node-RED</td></tr>';
+    return;
+  }
+  tbody.innerHTML = state.sessions.map(s => `
+    <tr>
+      <td><strong>${s.name}</strong></td>
+      <td>${s.age}</td>
+      <td>${s.sex === 'M' ? '♂ Masculin' : s.sex === 'F' ? '♀ Féminin' : s.sex || '—'}</td>
+      <td>${s.weight ? s.weight+'kg' : '—'}</td>
+      <td>${s.height ? s.height+'cm' : '—'}</td>
+      <td><strong style="color:#10B981">${s.imc}</strong></td>
+      <td style="color:var(--gray);font-size:12px">${s.date}</td>
+      <td><span class="metric-status status-normal">${s.status}</span></td>
+    </tr>
+  `).join('');
+}
+
+// ══ SESSION HISTORY ══
+function updateSessionHistory() {
+  const div = document.getElementById('sessionHistory');
+  div.innerHTML = state.sessions.map(s => `
+    <div class="session-card">
+      <div class="session-header">
+        <span class="session-date">📅 ${s.date}</span>
+        <span class="session-duration">Patient: ${s.name}</span>
+      </div>
+      <div class="session-vitals">
+        <div class="session-vital">
+          <div class="sv-val" style="color:#EF4444">${state.bpm || '--'}</div>
+          <div class="sv-lbl">BPM Actuel</div>
+        </div>
+        <div class="session-vital">
+          <div class="sv-val" style="color:#3B82F6">${state.spo2 || '--'}%</div>
+          <div class="sv-lbl">SpO2 Actuel</div>
+        </div>
+        <div class="session-vital">
+          <div class="sv-val" style="color:#10B981">${s.imc}</div>
+          <div class="sv-lbl">IMC</div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ══ ANNOTATIONS ══
+function addAnnotation() {
+  const text = document.getElementById('annotationText').value.trim();
+  if (!text) return;
+  const ann = {
+    text, date: new Date().toLocaleString('fr-FR'),
+    doctor: document.getElementById('doctorName')?.value || 'Dr. MediSense',
+    bpm: state.bpm, spo2: state.spo2
+  };
+  state.annotations.push(ann);
+  document.getElementById('annotationText').value = '';
+  renderAnnotations();
+  showToast('✅ Annotation enregistrée');
+}
+
+function renderAnnotations() {
+  const div = document.getElementById('annotationsList');
+  if (state.annotations.length === 0) {
+    div.innerHTML = '<p style="color:var(--gray);font-size:13px;text-align:center;padding:20px">Aucune annotation pour le moment</p>';
+    return;
+  }
+  div.innerHTML = state.annotations.slice().reverse().map(a => `
+    <div class="annotation-item">
+      <div class="annotation-meta">
+        🕐 ${a.date} — ${a.doctor} | BPM: ${a.bpm} | SpO2: ${a.spo2}%
+      </div>
+      <div class="annotation-text">${a.text}</div>
+    </div>
+  `).join('');
+}
+
+// ══ GENERATE PDF PREVIEW ══
+function generatePDF() {
+  // ✅ FIX 5: guard — afficher message utile si pas de patient
+  const preview = document.getElementById('pdfPreview');
+  if (!state.patient || !state.patient.name) {
+    if (preview) preview.innerHTML = `
+      <div style="text-align:center;padding:40px;color:#94A3B8">
+        <div style="font-size:48px;margin-bottom:16px">👤</div>
+        <div style="font-size:16px;font-weight:600;margin-bottom:8px">Aucun patient connecté</div>
+        <div style="font-size:13px">Le rapport s'affichera automatiquement dès qu'un patient se connecte dans l'application patient.</div>
+      </div>`;
+    return;
+  }
+  const lang = document.getElementById('reportLang')?.value || 'fr';
+  const isAr = lang === 'ar';
+  const isEn = lang === 'en';
+  const p = state.patient;
+  const imc = calcIMC();
+  const bpmAvg = state.bpmHistory.length > 0
+    ? Math.round(state.bpmHistory.reduce((a,b)=>a+b,0)/state.bpmHistory.length) : '--';
+  const spo2Avg = state.spo2Count > 0 ? Math.round(state.spo2Sum/state.spo2Count) : '--';
+  const doctorName = document.getElementById('doctorName')?.value || 'Dr. MediSense';
+  const now = new Date().toLocaleString(lang === 'fr' ? 'fr-FR' : lang === 'ar' ? 'ar-MA' : 'en-GB');
+
+  // Recommendations
+  let reco = '';
+  if (isAr) {
+    reco = state.bpm >= 60 && state.bpm <= 100 && state.spo2 >= 95
+      ? 'المعايير الحيوية ضمن المعدل الطبيعي حسب منظمة الصحة العالمية. يُنصح بمواصلة المراقبة الدورية.'
+      : 'تم رصد قيم خارج النطاق الطبيعي. يُوصى باستشارة طبيب متخصص.';
+  } else if (isEn) {
+    reco = state.bpm >= 60 && state.bpm <= 100 && state.spo2 >= 95
+      ? 'Vital signs are within normal WHO ranges. Regular monitoring is advised.'
+      : 'Values outside normal range detected. Specialist consultation recommended.';
+  } else {
+    reco = state.bpm >= 60 && state.bpm <= 100 && state.spo2 >= 95
+      ? 'Les paramètres vitaux sont dans les normes OMS. Surveillance périodique recommandée.'
+      : 'Des valeurs hors normes ont été détectées. Une consultation spécialisée est recommandée.';
+  }
+
+  const annHtml = state.annotations.length > 0
+    ? state.annotations.map(a => `<p style="margin-bottom:6px"><strong>${a.date}</strong> — ${a.text}</p>`).join('')
+    : (isAr ? 'لا توجد ملاحظات' : isEn ? 'No annotations' : 'Aucune annotation');
+
+  document.getElementById('pdfPreview').innerHTML = `
+    <div style="${isAr ? 'direction:rtl;text-align:right' : ''}">
+      <div class="pdf-header">
+        <div>
+          <div class="pdf-logo">Medi<span>Sense</span></div>
+          <div class="pdf-subtitle">
+            ${isAr ? 'نظام المراقبة الطبية عن بُعد' : isEn ? 'Remote Medical Monitoring System' : 'Système de surveillance médicale IoT'}
+          </div>
+        </div>
+        <div class="pdf-date">
+          <div style="font-weight:600;color:#1D5FE8;font-size:13px">
+            ${isAr ? 'تقرير طبي' : isEn ? 'Medical Report' : 'Rapport Médical'}
+          </div>
+          <div>${now}</div>
+          <div style="margin-top:4px;font-size:11px">ESP32 + MAX30102</div>
+        </div>
+      </div>
+
+      <div class="pdf-section-title">
+        ${isAr ? 'معلومات المريض' : isEn ? 'Patient Information' : 'Informations Patient'}
+      </div>
+      <div class="pdf-grid2">
+        <div>
+          <div class="pdf-field">
+            <label>${isAr ? 'الاسم الكامل' : isEn ? 'Full Name' : 'Nom complet'}</label>
+            <value>${p.name || '—'}</value>
+          </div>
+          <div class="pdf-field">
+            <label>${isAr ? 'العمر' : isEn ? 'Age' : 'Âge'}</label>
+            <value>${p.age || '—'} ${isAr ? 'سنة' : isEn ? 'years' : 'ans'}</value>
+          </div>
+          <div class="pdf-field">
+            <label>${isAr ? 'الجنس' : isEn ? 'Sex' : 'Sexe'}</label>
+            <value>${p.sex === 'M' ? (isAr?'ذكر':isEn?'Male':'Masculin') : (isAr?'أنثى':isEn?'Female':'Féminin')}</value>
+          </div>
+        </div>
+        <div>
+          <div class="pdf-field">
+            <label>${isAr ? 'الوزن' : isEn ? 'Weight' : 'Poids'}</label>
+            <value>${p.weight ? p.weight+' kg' : '—'}</value>
+          </div>
+          <div class="pdf-field">
+            <label>${isAr ? 'الطول' : isEn ? 'Height' : 'Taille'}</label>
+            <value>${p.height ? p.height+' cm' : '—'}</value>
+          </div>
+          <div class="pdf-field">
+            <label>${isAr ? 'مؤشر كتلة الجسم' : isEn ? 'BMI' : 'IMC'}</label>
+            <value style="color:#1D5FE8;font-weight:700">${imc.val.toFixed(1)} kg/m² — ${imc.label}</value>
+          </div>
+        </div>
+      </div>
+
+      <div class="pdf-section-title">
+        ${isAr ? 'القياسات الحيوية' : isEn ? 'Vital Signs' : 'Paramètres Vitaux'}
+      </div>
+      <div class="pdf-vitals">
+        <div class="pdf-vital-box">
+          <div class="val">${state.bpm || '--'}</div>
+          <div class="lbl">${isAr ? 'معدل ضربات القلب' : isEn ? 'Heart Rate' : 'Fréquence Cardiaque'} (BPM)</div>
+          <div class="status-badge" style="background:#DCFCE7;color:#065F46">
+            ${state.bpm >= 60 && state.bpm <= 100 ? (isAr?'طبيعي':isEn?'Normal':'Normal OMS') : (isAr?'غير طبيعي':isEn?'Abnormal':'Hors norme')}
+          </div>
+        </div>
+        <div class="pdf-vital-box">
+          <div class="val" style="color:#1D5FE8">${state.spo2 || '--'}%</div>
+          <div class="lbl">${isAr ? 'تشبع الأوكسجين' : isEn ? 'SpO2' : 'Saturation SpO2'}</div>
+          <div class="status-badge" style="background:${state.spo2>=95?'#DCFCE7':'#FEF9C3'};color:${state.spo2>=95?'#065F46':'#854D0E'}">
+            ${state.spo2 >= 95 ? (isAr?'طبيعي':isEn?'Normal':'Normal OMS') : (isAr?'منخفض':isEn?'Low':'Hypoxémie')}
+          </div>
+        </div>
+        <div class="pdf-vital-box">
+          <div class="val" style="color:#10B981">${bpmAvg}</div>
+          <div class="lbl">${isAr ? 'متوسط ضربات القلب' : isEn ? 'Avg BPM' : 'BPM Moyen'} | SpO2 ${isAr?'متوسط':isEn?'Avg':'Moy'}: ${spo2Avg}%</div>
+          <div class="status-badge" style="background:#DBEAFE;color:#1E40AF">Session</div>
+        </div>
+      </div>
+
+      <div class="pdf-section-title">
+        ${isAr ? 'التوصيات الطبية' : isEn ? 'Medical Recommendations' : 'Recommandations Médicales'}
+      </div>
+      <div class="pdf-recommendation">${reco}</div>
+
+      <div class="pdf-section-title">
+        ${isAr ? 'ملاحظات الطبيب' : isEn ? "Doctor's Notes" : 'Annotations du Médecin'}
+      </div>
+      <div class="pdf-annotation-box">${annHtml}</div>
+
+      <div class="pdf-footer">
+        <div style="font-size:11px;color:#64748B">
+          <div>MediSense IoT — BTS EII</div>
+          <div>ESP32 + MAX30102 + Node-RED</div>
+          <div style="margin-top:4px;font-size:10px;color:#94A3B8">
+            ${isAr ? 'هذا التقرير مُولَّد تلقائياً' : isEn ? 'Auto-generated medical report' : 'Rapport généré automatiquement'}
+          </div>
+        </div>
+        <div class="pdf-signature">
+          <div class="sig-line"></div>
+          <p>${doctorName}</p>
+          <p style="color:#1D5FE8">${isAr ? 'طبيب مشرف' : isEn ? 'Supervising Physician' : 'Médecin Superviseur'}</p>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function printReport() {
+  const preview = document.getElementById('pdfPreview').innerHTML;
+  const w = window.open('','_blank');
+  w.document.write(`
+    <html><head>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+      body { font-family:'Syne',sans-serif; margin:40px; color:#1a1a1a; }
+      .pdf-header { display:flex; justify-content:space-between; border-bottom:3px solid #1D5FE8; padding-bottom:20px; margin-bottom:24px; }
+      .pdf-logo { font-family:'DM Serif Display',serif; font-size:28px; color:#0A1628; }
+      .pdf-logo span { color:#1D5FE8; }
+      .pdf-section-title { font-size:11px; text-transform:uppercase; letter-spacing:1.5px; color:#1D5FE8; margin-bottom:12px; margin-top:20px; padding-bottom:6px; border-bottom:1px solid #E2E8F0; }
+      .pdf-grid2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+      .pdf-field { margin-bottom:10px; }
+      .pdf-field label { font-size:11px; color:#94A3B8; display:block; }
+      .pdf-vitals { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:16px 0; }
+      .pdf-vital-box { background:#F8FAFF; border:1px solid #E2E8F0; border-radius:8px; padding:14px; text-align:center; }
+      .pdf-vital-box .val { font-size:28px; font-weight:700; color:#1D5FE8; }
+      .pdf-vital-box .lbl { font-size:11px; color:#94A3B8; }
+      .status-badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:10px; font-weight:600; margin-top:6px; }
+      .pdf-recommendation { background:#F0FDF4; border:1px solid #BBF7D0; border-left:4px solid #10B981; border-radius:8px; padding:14px; font-size:13px; color:#065F46; }
+      .pdf-annotation-box { background:#EFF6FF; border:1px solid #BFDBFE; border-radius:8px; padding:14px; font-size:13px; min-height:60px; }
+      .pdf-footer { margin-top:30px; padding-top:16px; border-top:1px solid #E2E8F0; display:flex; justify-content:space-between; }
+      .pdf-signature .sig-line { border-bottom:1px solid #1D5FE8; width:200px; height:40px; margin-bottom:6px; }
+    </style>
+    </head><body>${preview}</body></html>
+  `);
+  w.document.close();
+  setTimeout(() => { w.print(); }, 800);
+}
+
+// ══ EMAIL MODAL ══
+function showEmailModal() {
+  generatePDF();
+  document.getElementById('emailTo').value = state.patient.email || '';
+  document.getElementById('emailModal').classList.add('show');
+}
+
+function closeEmailModal() {
+  document.getElementById('emailModal').classList.remove('show');
+}
+
+async function sendEmail() {
+  const to = document.getElementById('emailTo').value.trim();
+  if (!to) { showToast('⚠️ Entrez un email valide', true); return; }
+  if (!to.includes('@')) { showToast('⚠️ Adresse email invalide', true); return; }
+
+  // ✅ FIX 3: vérifier que le patient est chargé
+  if (!state.patient.name) {
+    showToast('⚠️ Aucun patient sélectionné', true); return;
+  }
+
+  const btn = document.querySelector('#emailModal .btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = '📤 Envoi...'; }
+  showToast('📤 Envoi en cours...');
+
+  try {
+    const r = await fetch(NGROK + '/send-report', {
+      method: 'POST', headers: HEADERS,
+      body: JSON.stringify({
+        to,
+        subject: `Rapport MediSense — ${state.patient.name}`,
+        message: document.getElementById('emailMessage').value || 'Rapport médical MediSense',
+        patientName: state.patient.name,
+        bpm:  state.bpm  || 0,
+        spo2: state.spo2 || 0,
+        news2: state.news2Score || 0,
+      })
+    });
+
+    closeEmailModal();
+    if (r.ok) {
+      showToast('✅ Rapport envoyé à ' + to);
+    } else {
+      // ✅ Afficher vrai statut
+      const txt = await r.text().catch(() => '');
+      showToast('❌ Erreur serveur ' + r.status + ' — vérifiez Node-RED', true);
+      console.error('send-report error:', r.status, txt);
+    }
+  } catch(e) {
+    closeEmailModal();
+    showToast('❌ Hors ligne — vérifiez la connexion ngrok', true);
+    console.error('sendEmail exception:', e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '📤 Envoyer'; }
+  }
+}
+
+// ══ TOAST ══
+function showToast(msg, isWarning=false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = isWarning ? '#F59E0B' : '#10B981';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ══════════════════════════════════════
+// FONCTIONS ADMIN
+// ══════════════════════════════════════
+
+// ── Live monitor dans l'onglet Admin ──
+async function adminFetchLive() {
+  if (!state.loggedIn) return;
+  try {
+    const r = await fetch(NGROK + '/readings', { headers: HEADERS });
+    const d = await r.json();
+    const bpm  = d.bpm  || 0;
+    const spo2 = d.spo2 || 0;
+
+    document.getElementById('adminLiveBpm').textContent  = bpm  > 0 ? Math.round(bpm)  : '--';
+    document.getElementById('adminLiveSpo2').textContent = spo2 > 0 ? Math.round(spo2) : '--';
+
+    // Status OMS
+    let statusText, statusColor;
+    if (bpm <= 0) {
+      statusText = '⬤ En attente...'; statusColor = '#94A3B8';
+    } else if (bpm < 50 || bpm > 120 || spo2 < 90) {
+      statusText = '🔴 URGENCE'; statusColor = '#EF4444';
+    } else if (bpm < 60 || bpm > 100 || spo2 < 95) {
+      statusText = '🟡 Surveillance'; statusColor = '#F59E0B';
+    } else {
+      statusText = '🟢 Normal OMS'; statusColor = '#10B981';
+    }
+    const liveStatusEl = document.getElementById('adminLiveStatus');
+    liveStatusEl.textContent = statusText;
+    liveStatusEl.style.color = statusColor;
+
+  } catch(e) {
+    document.getElementById('adminLiveStatus').textContent = '⬤ Hors ligne';
+  }
+}
+
+// ── Charger la liste des patients depuis localStorage de l'app patient ──
+function loadAdminPatients() {
+  // Patients viennent du localStorage partagé (ms_users) via Node-RED /users
+  adminFetchPatients();
+}
+
+async function adminFetchPatients() {
+  const grid = document.getElementById('adminGrid');
+  grid.innerHTML = '<div style="color:var(--gray);padding:20px">Chargement...</div>';
+
+  try {
+    const r = await fetch(NGROK + '/users', { headers: HEADERS });
+    const users = await r.json();
+
+    if (!users || Object.keys(users).length === 0) {
+      grid.innerHTML = `
+        <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--gray)">
+          <div style="font-size:40px;margin-bottom:12px">👥</div>
+          <div>Aucun patient enregistré</div>
+          <div style="font-size:12px;margin-top:8px;opacity:0.6">Les patients apparaissent ici après inscription dans l'app patient</div>
+        </div>`;
+      document.getElementById('adminSubtitle').textContent = '0 patient(s) enregistré(s)';
+      return;
+    }
+
+    const keys = Object.keys(users);
+    document.getElementById('adminSubtitle').textContent = keys.length + ' patient(s) enregistré(s)';
+
+    // Update live patient name
+    try {
+      const rp = await fetch(NGROK + '/patient', { headers: HEADERS });
+      const active = await rp.json();
+      if (active && active.name) {
+        document.getElementById('adminLivePatient').textContent = '👤 ' + active.name;
+      }
+    } catch(e) {}
+
+    grid.innerHTML = keys.map(name => {
+      const u = users[name];
+      const imcVal = u.imc ? parseFloat(u.imc).toFixed(1) : '—';
+      let imcColor = '#94A3B8';
+      if (u.imc) {
+        const v = parseFloat(u.imc);
+        imcColor = v < 18.5 ? '#F59E0B' : v < 25 ? '#10B981' : v < 30 ? '#F59E0B' : '#EF4444';
+      }
+      return `
+      <div class="card" style="padding:20px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+          <div>
+            <div style="font-size:16px;font-weight:600">${u.name || name}</div>
+            <div style="font-size:12px;color:var(--gray);margin-top:2px">${u.age ? u.age+' ans' : '—'} · ${u.gender || '—'}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:11px;color:var(--gray)">IMC</div>
+            <div style="font-size:20px;font-weight:700;color:${imcColor}">${imcVal}</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;font-size:12px">
+          <div><span style="color:var(--gray)">Poids:</span> ${u.weight ? u.weight+' kg' : '—'}</div>
+          <div><span style="color:var(--gray)">Taille:</span> ${u.height ? u.height+' cm' : '—'}</div>
+          <div><span style="color:var(--gray)">Email:</span> ${u.email || '—'}</div>
+          <div><span style="color:var(--gray)">Inscrit:</span> ${u.createdAt ? new Date(u.createdAt).toLocaleDateString('fr-FR') : '—'}</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-primary" style="font-size:11px;padding:6px 12px"
+            onclick="adminSelectPatient('${name}')">👁️ Surveiller</button>
+          <button class="btn btn-amber" style="font-size:11px;padding:6px 12px"
+            onclick="adminExportPatient('${name}')">📥 Exporter</button>
+          <button class="btn" style="font-size:11px;padding:6px 12px;background:rgba(239,68,68,0.1);color:#EF4444;border:1px solid rgba(239,68,68,0.3)"
+            onclick="adminDeletePatient('${name}')">🗑️ Supprimer</button>
+        </div>
+      </div>`;
+    }).join('');
+
+  } catch(e) {
+    grid.innerHTML = `
+      <div style="grid-column:1/-1;text-align:center;padding:40px;color:#EF4444">
+        <div style="font-size:40px;margin-bottom:12px">⚠️</div>
+        <div>Impossible de charger les patients</div>
+        <div style="font-size:12px;margin-top:8px;opacity:0.7">Vérifiez la connexion Node-RED / ngrok</div>
+        <button class="btn btn-primary" style="margin-top:16px" onclick="loadAdminPatients()">Réessayer</button>
+      </div>`;
+  }
+}
+
+// ── Sélectionner un patient pour surveillance ──
+async function adminSelectPatient(name) {
+  try {
+    const r = await fetch(NGROK + '/users', { headers: HEADERS });
+    const users = await r.json();
+    const u = users[name];
+    if (!u) return;
+
+    state.patient = {
+      name: u.name || name,
+      age:  u.age  || '—',
+      sex:  u.gender || '—',
+      weight: u.weight || '',
+      height: u.height || '',
+      imc:    u.imc    || '',
+      email:  u.email  || '',
+    };
+    const imc = calcIMC();
+    document.getElementById('headerPatientName').textContent = '👤 ' + state.patient.name;
+    document.getElementById('headerPatientAge').textContent  = state.patient.age + ' ans';
+    document.getElementById('headerIMC').textContent         = imc.val > 0 ? imc.val.toFixed(1) : (u.imc||'—');
+    document.getElementById('imcValue').textContent          = imc.val > 0 ? imc.val.toFixed(1) : (u.imc||'--');
+    document.getElementById('imcStatus').textContent         = '⬤ ' + imc.label;
+    document.getElementById('imcStatus').className           = 'metric-status ' + imc.cls;
+    document.getElementById('imcPointer').style.left         = imc.pct + '%';
+    generatePDF();
+    showToast('👤 Patient sélectionné : ' + state.patient.name);
+
+    // Switch to surveillance tab
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-vitals').classList.add('active');
+    document.querySelector('.nav-tab').classList.add('active'); // vitals tab
+
+  } catch(e) { showToast('⚠️ Erreur chargement patient', true); }
+}
+
+// ── Exporter historique d'un patient en CSV ──
+async function adminExportPatient(name) {
+  try {
+    const r = await fetch(NGROK + '/users', { headers: HEADERS });
+    const users = await r.json();
+    const u = users[name];
+    if (!u) return;
+
+    const rows = [
+      ['Champ','Valeur'],
+      ['Nom', u.name||name],
+      ['Âge', u.age||'—'],
+      ['Sexe', u.gender||'—'],
+      ['Poids (kg)', u.weight||'—'],
+      ['Taille (cm)', u.height||'—'],
+      ['IMC', u.imc||'—'],
+      ['Email', u.email||'—'],
+      ['Inscrit', u.createdAt ? new Date(u.createdAt).toLocaleString('fr-FR') : '—'],
+    ];
+    const csv  = rows.map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type:'text/csv' });
+    const a    = document.createElement('a');
+    a.href     = URL.createObjectURL(blob);
+    a.download = `patient_${name}_${new Date().toLocaleDateString('fr-FR').replace(/\//g,'-')}.csv`;
+    a.click();
+    showToast('📥 Export CSV : ' + (u.name||name));
+  } catch(e) { showToast('⚠️ Erreur export', true); }
+}
+
+// ── Supprimer un patient ──
+async function adminDeletePatient(name) {
+  if (!confirm(`Supprimer le patient "${name}" ? Cette action est irréversible.`)) return;
+  try {
+    await fetch(NGROK + '/users/' + encodeURIComponent(name), {
+      method: 'DELETE', headers: HEADERS
+    });
+    showToast('🗑️ Patient supprimé : ' + name);
+    loadAdminPatients();
+  } catch(e) {
+    // Fallback: just reload
+    showToast('🗑️ Patient retiré de la vue', true);
+    loadAdminPatients();
+  }
+}
+
+// ── Exporter tous les patients en CSV ──
+async function exportAllCSV() {
+  try {
+    const r = await fetch(NGROK + '/users', { headers: HEADERS });
+    const users = await r.json();
+    if (!users || Object.keys(users).length === 0) {
+      showToast('⚠️ Aucun patient à exporter', true); return;
+    }
+    const rows = [['Nom','Âge','Sexe','Poids','Taille','IMC','Email','Inscrit']];
+    Object.values(users).forEach(u => {
+      rows.push([
+        u.name||'—', u.age||'—', u.gender||'—',
+        u.weight||'—', u.height||'—', u.imc||'—', u.email||'—',
+        u.createdAt ? new Date(u.createdAt).toLocaleString('fr-FR') : '—'
+      ]);
+    });
+    const csv  = rows.map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type:'text/csv' });
+    const a    = document.createElement('a');
+    a.href     = URL.createObjectURL(blob);
+    a.download = `medisense_patients_${new Date().toLocaleDateString('fr-FR').replace(/\//g,'-')}.csv`;
+    a.click();
+    showToast('📥 Export complet — ' + Object.keys(users).length + ' patients');
+  } catch(e) { showToast('⚠️ Erreur export', true); }
+}
+</script>
+</body>
+</html>
