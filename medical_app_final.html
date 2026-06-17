@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MediSense — Patient Monitor</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #070b14;
+  --bg2: #0d1424;
+  --card: #0f1b2d;
+  --card2: #131f33;
+  --border: rgba(0,212,170,0.12);
+  --border2: rgba(255,255,255,0.06);
+  --accent: #00d4aa;
+  --accent-glow: rgba(0,212,170,0.15);
+  --accent2: #ff6b6b;
+  --accent2-glow: rgba(255,107,107,0.15);
+  --accent3: #ffd166;
+  --text: #e2e8f0;
+  --text2: #a8c0d4;
+  --muted: #4a6480;
+  --success: #10b981;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Syne', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::before {
+  content:'';
+  position:fixed;
+  inset:0;
+  background-image:
+    linear-gradient(rgba(0,212,170,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,170,0.025) 1px, transparent 1px);
+  background-size:48px 48px;
+  pointer-events:none;
+  z-index:0;
+}
+body::after {
+  content:'';
+  position:fixed;
+  inset:0;
+  background:
+    radial-gradient(ellipse 60% 50% at 15% 15%, rgba(0,212,170,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 85% 85%, rgba(0,168,255,0.05) 0%, transparent 60%);
+  pointer-events:none;
+  z-index:0;
+}
+.page { position:relative; z-index:1; }
+
+/* ===== SCREEN MANAGEMENT ===== */
+.screen { display:none; }
+.screen.active { display:block; }
+#authScreen.active { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:20px; }
+
+/* ===== AUTH ===== */
+.auth-container { width:100%; max-width:460px; animation: fadeUp 0.5s ease both; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+.logo { text-align:center; margin-bottom:44px; }
+.logo-icon {
+  display:inline-flex; align-items:center; justify-content:center;
+  width:56px; height:56px; border-radius:16px;
+  background:linear-gradient(135deg,rgba(0,212,170,0.15),rgba(0,168,255,0.1));
+  border:1px solid rgba(0,212,170,0.3);
+  font-size:1.6rem; margin-bottom:16px;
+  box-shadow:0 0 30px rgba(0,212,170,0.2);
+}
+.logo h1 {
+  font-family:'DM Serif Display',serif;
+  font-size:3rem;
+  background:linear-gradient(135deg,var(--accent) 20%,#00a8ff 80%);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  letter-spacing:-2px;
+}
+.logo p { color:var(--muted); font-size:0.7rem; letter-spacing:4px; text-transform:uppercase; margin-top:6px; font-family:'DM Mono',monospace; }
+.logo-sub { font-size:0.7rem; color:var(--muted); margin-top:8px; letter-spacing:1px; font-family:'DM Mono',monospace; }
+
+.auth-card {
+  background:rgba(15,27,45,0.85);
+  border:1px solid rgba(0,212,170,0.18);
+  border-radius:22px;
+  padding:40px;
+  box-shadow:0 40px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(0,212,170,0.05), inset 0 1px 0 rgba(255,255,255,0.06);
+  backdrop-filter:blur(24px);
+}
+.tabs { display:flex; gap:3px; background:rgba(7,11,20,0.8); border-radius:12px; padding:4px; margin-bottom:30px; border:1px solid var(--border2); }
+.tab { flex:1; padding:10px; border:none; border-radius:9px; background:transparent; color:var(--muted); font-family:'DM Mono',monospace; font-size:0.75rem; cursor:pointer; transition:all 0.25s; letter-spacing:1.5px; }
+.tab.active { background:linear-gradient(135deg,rgba(0,212,170,0.2),rgba(0,168,255,0.1)); color:var(--accent); border:1px solid rgba(0,212,170,0.25); }
+
+.form-group { margin-bottom:18px; }
+.form-group label { display:block; font-size:0.65rem; letter-spacing:2.5px; text-transform:uppercase; color:var(--muted); margin-bottom:8px; font-family:'DM Mono',monospace; }
+.form-group input, .form-group select {
+  width:100%; padding:13px 16px;
+  background:rgba(7,11,20,0.7); border:1px solid rgba(255,255,255,0.08);
+  border-radius:10px; color:var(--text);
+  font-family:'DM Mono',monospace; font-size:0.88rem;
+  transition:all 0.2s; outline:none;
+}
+.form-group input:focus, .form-group select:focus {
+  border-color:rgba(0,212,170,0.4);
+  background:rgba(0,212,170,0.04);
+  box-shadow:0 0 0 3px rgba(0,212,170,0.08);
+}
+.form-group select option { background:#0f1b2d; }
+
+.btn-primary {
+  width:100%; padding:14px;
+  background:linear-gradient(135deg,var(--accent),#00b8d4);
+  border:none; border-radius:10px;
+  color:var(--bg); font-family:'DM Mono',monospace;
+  font-size:0.82rem; font-weight:700; letter-spacing:2.5px;
+  text-transform:uppercase; cursor:pointer; transition:all 0.25s; margin-top:8px;
+  box-shadow:0 4px 20px rgba(0,212,170,0.3);
+}
+.btn-primary:hover { transform:translateY(-2px); box-shadow:0 10px 32px rgba(0,212,170,0.45); filter:brightness(1.05); }
+.btn-primary:active { transform:translateY(0); }
+.btn-secondary {
+  width:100%; padding:12px; background:transparent;
+  border:1px solid rgba(255,255,255,0.08); border-radius:10px;
+  color:var(--muted); font-family:'DM Mono',monospace;
+  font-size:0.78rem; cursor:pointer; transition:all 0.2s;
+  margin-top:8px; letter-spacing:1px;
+}
+.btn-secondary:hover { border-color:rgba(0,212,170,0.3); color:var(--accent); }
+
+.msg { padding:10px 14px; border-radius:10px; font-size:0.78rem; margin-top:14px; display:none; font-family:'DM Mono',monospace; }
+
+.pass-wrap { position:relative; }
+.pass-wrap input { padding-right:44px; }
+.eye-btn {
+  position:absolute; right:12px; top:50%; transform:translateY(-50%);
+  background:none; border:none; cursor:pointer; color:var(--muted);
+  font-size:1.1rem; padding:4px; transition:all 0.3s; line-height:1;
+  user-select:none;
+}
+.eye-btn:hover { color:var(--accent); transform:translateY(-50%) scale(1.2); }
+.eye-btn.reveal { color:var(--accent); animation:blink 0.3s ease; }
+@keyframes blink { 0%{opacity:0;transform:translateY(-50%) scale(0.5)} 100%{opacity:1;transform:translateY(-50%) scale(1)} }
+.msg.error { background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.3); color:var(--danger); display:block; }
+.msg.success { background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.3); color:var(--success); display:block; }
+.msg.warning { background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3); color:var(--warning); display:block; }
+
+/* ===== TOPBAR ===== */
+.topbar {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 28px; height:60px; border-bottom:1px solid rgba(0,212,170,0.1);
+  background:rgba(7,11,20,0.95); position:sticky; top:0; z-index:100;
+  backdrop-filter:blur(20px); box-shadow:0 1px 30px rgba(0,0,0,0.5);
+}
+.topbar-logo { font-family:'DM Serif Display',serif; font-size:1.5rem; background:linear-gradient(135deg,var(--accent),#00a8ff); -webkit-background-clip:text; -webkit-text-fill-color:transparent; cursor:pointer; letter-spacing:-0.5px; }
+.topbar-nav { display:flex; gap:6px; }
+.nav-btn {
+  padding:8px 14px; border:1px solid rgba(255,255,255,0.07);
+  background:transparent; color:var(--muted);
+  border-radius:9px; font-family:'DM Mono',monospace;
+  font-size:0.72rem; cursor:pointer; transition:all 0.2s; letter-spacing:1px;
+}
+.nav-btn:hover, .nav-btn.active { border-color:rgba(0,212,170,0.4); color:var(--accent); background:rgba(0,212,170,0.06); }
+.nav-btn.danger:hover { border-color:rgba(255,107,107,0.4); color:var(--accent2); background:rgba(255,107,107,0.06); }
+
+.patient-badge {
+  display:flex; align-items:center; gap:10px;
+  background:rgba(7,11,20,0.6); border:1px solid rgba(255,255,255,0.07);
+  border-radius:50px; padding:6px 14px;
+}
+.patient-avatar {
+  width:28px; height:28px; border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),#00a8ff);
+  display:flex; align-items:center; justify-content:center;
+  font-size:0.72rem; font-weight:bold; color:var(--bg);
+  font-family:'DM Mono',monospace;
+}
+.patient-name { font-size:0.8rem; font-weight:500; }
+.patient-meta { font-size:0.62rem; color:var(--muted); font-family:'DM Mono',monospace; }
+
+/* Timer bar */
+.timer-bar {
+  display:none; text-align:center; padding:5px;
+  background:rgba(0,212,170,0.04); font-size:0.68rem; font-family:'DM Mono',monospace;
+  color:var(--muted); letter-spacing:1.5px;
+  border-bottom:1px solid rgba(0,212,170,0.08);
+  transition:color 0.3s;
+}
+.timer-bar.urgent { color:var(--accent2) !important; background:rgba(239,68,68,0.04); }
+
+/* ===== DASHBOARD ===== */
+.dashboard-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(290px, 1fr));
+  gap:20px; padding:28px;
+  max-width:1500px; margin:0 auto;
+}
+.card {
+  background:var(--card);
+  border:1px solid rgba(0,212,170,0.1);
+  border-radius:18px; padding:24px; position:relative; overflow:hidden;
+  transition:border-color 0.3s, transform 0.2s;
+}
+.card:hover { border-color:rgba(0,212,170,0.22); }
+.card::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:1px;
+  background:linear-gradient(90deg,transparent,var(--accent),transparent);
+  opacity:0.5;
+}
+.card.accent2 { border-color:rgba(255,107,107,0.1); }
+.card.accent2::before { background:linear-gradient(90deg,var(--accent2),transparent 60%); }
+.card.accent3 { border-color:rgba(255,209,102,0.1); }
+.card.accent3::before { background:linear-gradient(90deg,var(--accent3),transparent 60%); }
+.card.full { grid-column:1/-1; }
+.card.half { grid-column:span 2; }
+
+/* Subtle inner glow behind vital numbers */
+.card#bpmCard::after { content:''; position:absolute; top:40%; left:50%; transform:translate(-50%,-50%); width:80%; height:80%; background:radial-gradient(ellipse,rgba(0,212,170,0.04) 0%,transparent 70%); pointer-events:none; }
+.card#spo2Card::after { content:''; position:absolute; top:40%; left:50%; transform:translate(-50%,-50%); width:80%; height:80%; background:radial-gradient(ellipse,rgba(255,107,107,0.04) 0%,transparent 70%); pointer-events:none; }
+
+.card-label { font-size:0.62rem; letter-spacing:3px; text-transform:uppercase; color:var(--muted); margin-bottom:14px; font-family:'DM Mono',monospace; }
+.vital-value { font-family:'DM Serif Display',serif; font-size:4rem; line-height:1; color:var(--accent); transition:color 0.4s, transform 0.15s; }
+.vital-value.tick { transform:scale(1.06); }
+.vital-value.danger { color:var(--accent2); text-shadow:0 0 20px rgba(255,107,107,0.3); }
+.vital-value.warning { color:var(--accent3); }
+.vital-unit { font-size:0.72rem; color:var(--muted); margin-top:6px; font-family:'DM Mono',monospace; letter-spacing:0.5px; }
+
+.status-badge {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:5px 14px; border-radius:50px; font-size:0.64rem;
+  letter-spacing:2px; margin-top:14px; font-family:'DM Mono',monospace;
+  font-weight:600;
+}
+.status-badge.normal { background:rgba(16,185,129,0.08); color:var(--success); border:1px solid rgba(16,185,129,0.25); }
+.status-badge.warning { background:rgba(255,209,102,0.08); color:var(--accent3); border:1px solid rgba(255,209,102,0.25); }
+.status-badge.danger { background:rgba(239,68,68,0.08); color:var(--danger); border:1px solid rgba(239,68,68,0.25); }
+.dot { width:5px; height:5px; border-radius:50%; background:currentColor; animation:pulse 1.5s infinite; flex-shrink:0; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.3;transform:scale(0.7)} }
+
+.anomaly-tag { position:absolute; top:16px; right:16px; font-size:0.62rem; letter-spacing:1px; padding:3px 9px; border-radius:5px; font-family:'DM Mono',monospace; }
+
+.chart-wrap { height:100px; margin-top:16px; }
+
+/* Stats grid */
+.stats-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:10px; }
+.stat-item { background:rgba(7,11,20,0.5); border-radius:10px; padding:12px; border:1px solid rgba(255,255,255,0.04); }
+.stat-label { font-size:0.58rem; color:var(--muted); letter-spacing:2px; text-transform:uppercase; font-family:'DM Mono',monospace; }
+.stat-value { font-family:'DM Serif Display',serif; font-size:2rem; color:var(--text); margin-top:4px; transition:color 0.3s; }
+
+/* Stress */
+.stress-emoji { font-size:2.4rem; margin:8px 0; }
+.stress-desc { font-size:0.72rem; color:var(--muted); margin-top:6px; font-family:'DM Mono',monospace; }
+
+/* No finger */
+.no-finger { text-align:center; padding:48px 20px; color:var(--muted); }
+.no-finger-icon { font-size:3rem; margin-bottom:14px; opacity:0.5; animation:float 3s ease-in-out infinite; }
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+
+/* History table */
+.history-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
+.btn-small {
+  padding:7px 14px; background:transparent;
+  border:1px solid rgba(0,212,170,0.3); color:var(--accent);
+  border-radius:7px; font-family:'DM Mono',monospace;
+  font-size:0.68rem; cursor:pointer; letter-spacing:1px; transition:all 0.2s;
+}
+.btn-small:hover { background:rgba(0,212,170,0.1); }
+.btn-small.red { border-color:rgba(255,107,107,0.3); color:var(--accent2); }
+.btn-small.red:hover { background:rgba(255,107,107,0.1); }
+
+table { width:100%; border-collapse:collapse; font-size:0.78rem; font-family:'DM Mono',monospace; }
+th { text-align:left; padding:9px 12px; color:var(--muted); font-size:0.6rem; letter-spacing:2.5px; text-transform:uppercase; border-bottom:1px solid rgba(0,212,170,0.1); }
+td { padding:10px 12px; border-bottom:1px solid rgba(255,255,255,0.04); }
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:rgba(0,212,170,0.03); }
+
+/* ===== HISTORY PAGE ===== */
+.page-header { padding:28px; border-bottom:1px solid rgba(0,212,170,0.08); }
+.page-header h2 { font-family:'DM Serif Display',serif; font-size:1.9rem; color:var(--accent); letter-spacing:-0.5px; }
+.page-header p { color:var(--muted); font-size:0.78rem; margin-top:5px; font-family:'DM Mono',monospace; }
+.history-content { padding:24px; max-width:1200px; margin:0 auto; }
+
+.session-card {
+  background:var(--card); border:1px solid rgba(255,255,255,0.06);
+  border-radius:16px; padding:22px; margin-bottom:12px;
+  cursor:pointer; transition:all 0.25s;
+}
+.session-card:hover { border-color:rgba(0,212,170,0.35); transform:translateY(-2px); background:var(--card2); box-shadow:0 12px 30px rgba(0,0,0,0.3); }
+.session-date { font-size:0.65rem; color:var(--muted); letter-spacing:2.5px; text-transform:uppercase; font-family:'DM Mono',monospace; }
+.session-stats { display:flex; gap:24px; margin-top:10px; flex-wrap:wrap; }
+.session-stat-label { font-size:0.58px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; font-family:'DM Mono',monospace; font-size:0.6rem; }
+.session-stat-value { font-family:'DM Serif Display',serif; font-size:1.5rem; }
+
+/* ===== ADMIN PAGE ===== */
+.admin-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:18px; padding:24px; max-width:1400px; margin:0 auto; }
+.patient-card {
+  background:var(--card); border:1px solid rgba(255,255,255,0.06);
+  border-radius:14px; padding:22px; cursor:pointer; transition:all 0.2s;
+}
+.patient-card:hover { border-color:rgba(0,212,170,0.3); transform:translateY(-2px); background:var(--card2); }
+.patient-card-header { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+.patient-card-avatar {
+  width:42px; height:42px; border-radius:12px;
+  background:linear-gradient(135deg,rgba(0,212,170,0.3),rgba(0,168,255,0.2));
+  border:1px solid rgba(0,212,170,0.25);
+  display:flex; align-items:center; justify-content:center;
+  font-size:1rem; font-weight:bold; color:var(--accent); font-family:'DM Mono',monospace;
+}
+.patient-card-info h3 { font-size:0.95rem; font-weight:600; }
+.patient-card-info p { font-size:0.68rem; color:var(--muted); margin-top:2px; font-family:'DM Mono',monospace; }
+.patient-card-stats { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+.pcs-label { font-size:0.58rem; color:var(--muted); letter-spacing:1px; text-transform:uppercase; font-family:'DM Mono',monospace; }
+.pcs-value { font-family:'DM Serif Display',serif; font-size:1.3rem; }
+
+/* ===== SESSION SUMMARY MODAL ===== */
+.modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0.85);
+  display:none; align-items:center; justify-content:center;
+  z-index:200; padding:20px; backdrop-filter:blur(8px);
+}
+.modal-overlay.show { display:flex; }
+.modal {
+  background:var(--card2); border:1px solid rgba(0,212,170,0.22);
+  border-radius:24px; padding:40px; max-width:500px; width:100%;
+  box-shadow:0 60px 120px rgba(0,0,0,0.85), 0 0 80px rgba(0,212,170,0.08), inset 0 1px 0 rgba(255,255,255,0.05);
+  animation:modalIn 0.3s cubic-bezier(0.34,1.2,0.64,1);
+}
+@keyframes modalIn { from{opacity:0;transform:scale(0.95) translateY(10px)} to{opacity:1;transform:scale(1) translateY(0)} }
+.modal h2 { font-family:'DM Serif Display',serif; font-size:1.9rem; color:var(--accent); margin-bottom:6px; letter-spacing:-0.5px; }
+.modal p { color:var(--muted); font-size:0.78rem; margin-bottom:26px; font-family:'DM Mono',monospace; }
+.summary-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:26px; }
+.summary-item { background:rgba(7,11,20,0.7); border-radius:12px; padding:16px; border:1px solid rgba(255,255,255,0.05); }
+.summary-label { font-size:0.6rem; color:var(--muted); letter-spacing:2px; text-transform:uppercase; margin-bottom:5px; font-family:'DM Mono',monospace; }
+.summary-value { font-family:'DM Serif Display',serif; font-size:1.9rem; }
+.modal-actions { display:flex; gap:10px; }
+.modal-actions button { flex:1; }
+
+/* ===== LANGUAGE TOGGLE ===== */
+.lang-btn {
+  padding:6px 12px; background:transparent;
+  border:1px solid rgba(255,255,255,0.07); border-radius:7px;
+  color:var(--muted); font-family:'DM Mono',monospace;
+  font-size:0.68rem; cursor:pointer; transition:all 0.2s;
+}
+.lang-btn:hover { border-color:rgba(0,212,170,0.3); color:var(--accent); }
+
+/* ===== ALERT TOAST ===== */
+.alert-toast {
+  position:fixed; top:20px; right:20px;
+  background:rgba(239,68,68,0.95); color:white;
+  padding:14px 20px; border-radius:12px; font-size:0.82rem; font-family:'DM Mono',monospace;
+  z-index:300; transform:translateX(120%); transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  max-width:320px; box-shadow:0 10px 40px rgba(239,68,68,0.4);
+  border:1px solid rgba(255,255,255,0.15);
+}
+.alert-toast.show { transform:translateX(0); }
+.alert-toast.info { background:rgba(0,212,170,0.95); box-shadow:0 10px 40px rgba(0,212,170,0.4); }
+
+/* ===== PRINT ===== */
+@keyframes afibPulse {
+  0%,100%{ box-shadow:0 0 0 0 rgba(239,68,68,0.3); }
+  50%{ box-shadow:0 0 0 10px rgba(239,68,68,0); }
+}
+@media print {
+  body { background:white; color:black; }
+  .topbar, .timer-bar, .alert-toast, .no-print { display:none !important; }
+  .card { border:1px solid #ddd; box-shadow:none; }
+  .vital-value { color:#00aa88; }
+}
+
+@media (max-width:600px) {
+  .dashboard-grid { padding:14px; gap:12px; }
+  .vital-value { font-size:3rem; }
+  .topbar { padding:10px 14px; }
+  .topbar-nav { gap:4px; }
+  .nav-btn { padding:6px 10px; font-size:0.63rem; }
+  .card.half { grid-column:1/-1; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- ===== AUTH SCREEN ===== -->
+<div id="authScreen" class="screen active">
+  <div class="auth-container">
+    <div class="logo">
+      <div class="logo-icon">💓</div>
+      <h1>MediSense</h1>
+      <p>Patient Monitoring System</p>
+      <div class="logo-sub" id="logoSub">ESP32 · MAX30102 · Real-Time</div>
+      <div id="connectionStatus" style="font-size:0.7rem;margin-top:8px;color:var(--muted);letter-spacing:1px;">🔄 Detecting connection...</div>
+    </div>
+    <div class="auth-card">
+      <div class="tabs">
+        <button class="tab active" onclick="showTab('login')" data-fr="CONNEXION" data-en="LOGIN">LOGIN</button>
+        <button class="tab" onclick="showTab('register')" data-fr="CRÉER COMPTE" data-en="REGISTER">REGISTER</button>
+      </div>
+
+      <div id="loginForm">
+        <div class="form-group">
+          <label data-fr="Nom / ID Patient" data-en="Patient Name / ID">Patient Name / ID</label>
+          <input type="text" id="loginName" placeholder="John Doe">
+        </div>
+        <div class="form-group">
+          <label data-fr="Mot de passe" data-en="Password">Password</label>
+          <div class="pass-wrap">
+            <input type="password" id="loginPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')login()">
+            <button class="eye-btn" onclick="togglePass('loginPass',this)" tabindex="-1">👁</button>
+          </div>
+        </div>
+        <button class="btn-primary" onclick="login()" data-fr="SE CONNECTER" data-en="SIGN IN">SIGN IN</button>
+        <button class="btn-secondary" onclick="guestSession()" data-fr="CONTINUER SANS COMPTE" data-en="CONTINUE AS GUEST">CONTINUE AS GUEST</button>
+        <div id="loginMsg" class="msg"></div>
+      </div>
+
+      <div id="registerForm" style="display:none">
+        <div class="form-group">
+          <label data-fr="Nom complet" data-en="Full Name">Full Name</label>
+          <input type="text" id="regName" placeholder="John Doe">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="form-group">
+            <label data-fr="Âge" data-en="Age">Age</label>
+            <input type="number" id="regAge" placeholder="25" min="1" max="120">
+          </div>
+          <div class="form-group">
+            <label data-fr="Genre" data-en="Gender">Gender</label>
+            <select id="regGender">
+              <option value="" data-fr="Sélectionner" data-en="Select gender">Select gender</option>
+              <option value="Male" data-fr="Homme" data-en="Male">Male</option>
+              <option value="Female" data-fr="Femme" data-en="Female">Female</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="form-group">
+            <label data-fr="Poids (kg)" data-en="Weight (kg)">Weight (kg)</label>
+            <input type="number" id="regWeight" placeholder="70" min="1" max="300">
+          </div>
+          <div class="form-group">
+            <label data-fr="Taille (cm)" data-en="Height (cm)">Height (cm)</label>
+            <input type="number" id="regHeight" placeholder="175" min="50" max="250">
+          </div>
+        </div>
+        <div class="form-group">
+          <label data-fr="Email (pour rapport médical)" data-en="Email (for medical report)">Email (for medical report)</label>
+          <input type="email" id="regEmail" placeholder="patient@email.com">
+        </div>
+        <div class="form-group">
+          <label data-fr="Mot de passe" data-en="Password">Password</label>
+          <div class="pass-wrap">
+            <input type="password" id="regPass" placeholder="Create a password">
+            <button class="eye-btn" onclick="togglePass('regPass',this)" tabindex="-1">👁</button>
+          </div>
+        </div>
+        <button class="btn-primary" onclick="register()" data-fr="CRÉER LE COMPTE" data-en="CREATE ACCOUNT">CREATE ACCOUNT</button>
+        <div id="registerMsg" class="msg"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DASHBOARD SCREEN ===== -->
+<div id="dashboardScreen" class="screen">
+  <div class="topbar">
+    <div class="topbar-logo" onclick="showScreen('dashboardScreen')">MediSense</div>
+    <div class="topbar-nav">
+      <button class="nav-btn active" onclick="showDashTab('monitor')" id="monitorBtn" data-fr="MONITEUR" data-en="MONITOR">MONITOR</button>
+      <button class="nav-btn" onclick="showDashTab('history')" id="historyBtn" data-fr="HISTORIQUE" data-en="HISTORY">HISTORY</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button class="lang-btn" onclick="toggleLang()">FR/EN</button>
+      <div class="patient-badge" id="patientBadge">
+        <div class="patient-avatar" id="patientAvatar">?</div>
+        <div>
+          <div class="patient-name" id="patientNameDisplay">--</div>
+          <div class="patient-meta" id="patientMetaDisplay">--</div>
+        </div>
+      </div>
+      <button class="nav-btn danger" onclick="confirmLogout()" data-fr="DÉCONNEXION" data-en="LOGOUT">LOGOUT</button>
+    </div>
+  </div>
+  <div class="timer-bar" id="timerBar"></div>
+
+  <!-- MONITOR TAB -->
+  <div id="monitorTab">
+    <div class="dashboard-grid">
+
+      <!-- BPM -->
+      <div class="card" id="bpmCard">
+        <div class="card-label" data-fr="Fréquence Cardiaque" data-en="Heart Rate">Heart Rate</div>
+        <div class="vital-value" id="bpmValue">--</div>
+        <div class="vital-unit" data-fr="battements par minute" data-en="beats per minute">beats per minute</div>
+        <div id="bpmStatus" class="status-badge normal"><div class="dot"></div><span data-fr="EN ATTENTE" data-en="WAITING">WAITING</span></div>
+        <div id="bpmOms" style="font-size:0.7rem;color:var(--muted);margin-top:8px;letter-spacing:0.5px;"></div>
+        <div class="anomaly-tag" id="bpmAnomaly"></div>
+      </div>
+
+      <!-- SpO2 -->
+      <div class="card accent2" id="spo2Card">
+        <div class="card-label" data-fr="Oxygène Sanguin (SpO2)" data-en="Blood Oxygen (SpO2)">Blood Oxygen (SpO2)</div>
+        <div class="vital-value" id="spo2Value">--</div>
+        <div class="vital-unit" data-fr="% saturation en oxygène" data-en="% oxygen saturation">% oxygen saturation</div>
+        <div id="spo2Status" class="status-badge normal"><div class="dot"></div><span data-fr="EN ATTENTE" data-en="WAITING">WAITING</span></div>
+        <div id="spo2Oms" style="font-size:0.7rem;color:var(--muted);margin-top:8px;letter-spacing:0.5px;"></div>
+      </div>
+
+      <!-- Stress -->
+      <div class="card accent3">
+        <div class="card-label" data-fr="Niveau de Stress (VFC)" data-en="Stress Level (HRV)">Stress Level (HRV)</div>
+        <div class="stress-emoji" id="stressEmoji">⏳</div>
+        <div style="font-size:1.1rem;" id="stressValue">Collecting data...</div>
+        <div class="stress-desc" id="stressDesc" data-fr="Placez le doigt sur le capteur" data-en="Place finger on sensor">Place finger on sensor</div>
+      </div>
+
+      <!-- NEWS2 Score -->
+      <div class="card" id="news2Card" style="border-color:rgba(0,212,170,0.2);">
+        <div class="card-label" data-fr="Score NEWS2 — Risque Clinique" data-en="NEWS2 Score — Clinical Risk">NEWS2 Score — Clinical Risk</div>
+        <div style="font-family:'DM Serif Display',serif;font-size:3.5rem;line-height:1;color:var(--accent)" id="news2Value">--</div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:4px" data-fr="sur 6 paramètres mesurés" data-en="based on measured params">based on measured params</div>
+        <div id="news2Status" class="status-badge normal" style="margin-top:10px"><div class="dot"></div><span>WAITING</span></div>
+        <div id="news2Reco" style="font-size:0.68rem;color:var(--muted);margin-top:8px;line-height:1.5;"></div>
+      </div>
+
+      <!-- Session Stats -->
+      <div class="card">
+        <div class="card-label" data-fr="Statistiques Session" data-en="Session Stats">Session Stats</div>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-label" data-fr="MOY BPM" data-en="AVG BPM">AVG BPM</div>
+            <div class="stat-value" id="avgBpm">--</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label" data-fr="MOY SpO2" data-en="AVG SpO2">AVG SpO2</div>
+            <div class="stat-value" id="avgSpo2">--</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label" data-fr="MIN BPM" data-en="MIN BPM">MIN BPM</div>
+            <div class="stat-value" id="minBpm">--</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label" data-fr="MAX BPM" data-en="MAX BPM">MAX BPM</div>
+            <div class="stat-value" id="maxBpm">--</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Chart -->
+      <div class="card half">
+        <div class="card-label" data-fr="Historique BPM — Temps Réel" data-en="BPM History — Live">BPM History — Live</div>
+        <div class="chart-wrap"><canvas id="bpmChart"></canvas></div>
+      </div>
+
+      <!-- AFib Alert Banner -->
+      <div class="card full" id="afibAlert" style="display:none;border-color:rgba(239,68,68,0.5);background:rgba(239,68,68,0.07);animation:afibPulse 2s ease-in-out infinite;">
+        <div style="display:flex;align-items:center;gap:16px;">
+          <span style="font-size:2rem;">⚠️</span>
+          <div>
+            <div style="font-size:1rem;font-weight:600;color:var(--danger)" data-fr="Fibrillation Auriculaire Suspectée" data-en="Atrial Fibrillation Suspected">Atrial Fibrillation Suspected</div>
+            <div style="font-size:0.78rem;color:#FCA5A5;margin-top:3px" data-fr="Rythme cardiaque irrégulier détecté — Consultez un médecin" data-en="Irregular heart rhythm detected — Please consult a doctor">Irregular heart rhythm detected — Please consult a doctor</div>
+          </div>
+          <div style="margin-left:auto;font-size:0.7rem;color:var(--muted);text-align:right">
+            <div>RMSSD</div>
+            <div style="font-family:'DM Serif Display',serif;font-size:1.4rem;color:var(--danger)" id="rmssdValue">--</div>
+            <div>ms</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- OMS Reference Table -->
+      <div class="card half">
+        <div class="card-label" data-fr="Normes OMS — Référence Clinique" data-en="WHO Norms — Clinical Reference">WHO Norms — Clinical Reference</div>
+        <table style="width:100%;font-size:0.78rem;margin-top:4px;">
+          <thead>
+            <tr>
+              <th data-fr="Paramètre" data-en="Parameter">Parameter</th>
+              <th data-fr="Plage Normale" data-en="Normal Range">Normal Range</th>
+              <th>Statut</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td data-fr="FC Repos" data-en="Resting HR">Resting HR</td><td>60 – 100 BPM</td><td><span style="color:var(--success)">🟢</span></td></tr>
+            <tr><td data-fr="Bradycardie" data-en="Bradycardia">Bradycardia</td><td>&lt; 60 BPM</td><td><span style="color:var(--accent3)">🟡</span></td></tr>
+            <tr><td data-fr="Tachycardie" data-en="Tachycardia">Tachycardia</td><td>&gt; 100 BPM</td><td><span style="color:var(--accent3)">🟡</span></td></tr>
+            <tr><td data-fr="FC Critique" data-en="Critical HR">Critical HR</td><td>&lt; 50 / &gt; 120</td><td><span style="color:var(--danger)">🔴</span></td></tr>
+            <tr><td>SpO2 Normale</td><td>≥ 95%</td><td><span style="color:var(--success)">🟢</span></td></tr>
+            <tr><td data-fr="Hypoxémie légère" data-en="Mild Hypoxemia">Mild Hypoxemia</td><td>90 – 94%</td><td><span style="color:var(--accent3)">🟡</span></td></tr>
+            <tr><td data-fr="Hypoxémie sévère" data-en="Severe Hypoxemia">Severe Hypoxemia</td><td>&lt; 90%</td><td><span style="color:var(--danger)">🔴</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Readings Table -->
+      <div class="card full">
+        <div class="history-header">
+          <div class="card-label" style="margin:0" data-fr="Lectures de Session" data-en="Session Readings">Session Readings</div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn-small" onclick="exportCSV()" data-fr="EXPORTER CSV" data-en="EXPORT CSV">EXPORT CSV</button>
+            <button class="btn-small" onclick="window.print()" data-fr="IMPRIMER" data-en="PRINT">PRINT</button>
+          </div>
+        </div>
+        <div id="noFingerMsg" class="no-finger">
+          <div class="no-finger-icon">👆</div>
+          <div data-fr="Placez votre doigt sur le capteur pour commencer" data-en="Place your finger on the sensor to begin">Place your finger on the sensor to begin</div>
+        </div>
+        <table id="historyTable" style="display:none">
+          <thead>
+            <tr>
+              <th data-fr="Heure" data-en="Time">Time</th>
+              <th>BPM</th>
+              <th>SpO2</th>
+              <th data-fr="Statut OMS" data-en="WHO Status">WHO Status</th>
+              <th>NEWS2</th>
+              <th data-fr="Anomalie" data-en="Anomaly">Anomaly</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody"></tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- HISTORY TAB -->
+  <div id="historyTab" style="display:none">
+    <div class="page-header">
+      <h2 data-fr="Mon Historique" data-en="My History">My History</h2>
+      <p id="historySubtitle">All your past sessions</p>
+    </div>
+    <div class="history-content">
+      <div id="historyEmpty" class="no-finger">
+        <div class="no-finger-icon">📊</div>
+        <div data-fr="Aucune session enregistrée" data-en="No sessions recorded yet">No sessions recorded yet</div>
+      </div>
+      <div id="historySessions"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== SESSION SUMMARY MODAL ===== -->
+<div class="modal-overlay" id="summaryModal">
+  <div class="modal">
+    <h2 data-fr="Résumé de Session" data-en="Session Summary">Session Summary</h2>
+    <p id="summaryPatientName">--</p>
+    <div class="summary-grid" id="summaryGrid"></div>
+    <div class="modal-actions">
+      <button class="btn-primary" onclick="exportCSV(); closeSummary();" data-fr="EXPORTER CSV" data-en="EXPORT CSV">EXPORT CSV</button>
+      <button class="btn-secondary" onclick="closeSummary()" data-fr="FERMER" data-en="CLOSE">CLOSE</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ALERT TOAST ===== -->
+<div class="alert-toast" id="alertToast"></div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<script>
+// =============================================
+// CONFIGURATION
+// =============================================
+const AUTO_LOGOUT_MIN = 10; // minutes
+let READINGS_URL = '';
+let PATIENT_URL  = '';
+
+function initNgrok() {
+  const statusEl = document.getElementById('connectionStatus');
+  const saved = localStorage.getItem('ms_ngrok_url') || 'https://unspeedy-unmedalled-jedidiah.ngrok-free.dev';
+  localStorage.setItem('ms_ngrok_url', saved);
+  READINGS_URL = saved + '/readings';
+  PATIENT_URL  = saved + '/patient';
+  if (statusEl) { statusEl.textContent = '🟢 Connected — ' + saved.replace('https://',''); statusEl.style.color = 'var(--success)'; }
+}
+
+function fetchNgrokAndSave() {}
+
+// =============================================
+// STATE
+// =============================================
+let currentPatient  = null;
+let sessionReadings = [];
+let bpmHistory      = [];
+let bpmChart        = null;
+let fetchInterval   = null;
+let bpmReadings     = [];
+let secondsLeft     = AUTO_LOGOUT_MIN * 60;
+let countdownInterval = null;
+let lang            = localStorage.getItem('lang') || 'en';
+let alertTimeout;
+let afibRRBuffer    = [];   // RR intervals for AFib detection
+let afibAlertShown  = false;
+
+// =============================================
+// LANGUAGE
+// =============================================
+function toggleLang() {
+  lang = lang === 'en' ? 'fr' : 'en';
+  localStorage.setItem('lang', lang);
+  applyLang();
+}
+
+function applyLang() {
+  document.querySelectorAll('[data-' + lang + ']').forEach(el => {
+    const val = el.getAttribute('data-' + lang);
+    if (el.tagName === 'INPUT' || el.tagName === 'OPTION') el.textContent = val;
+    else if (!el.children.length || el.classList.contains('tab') || el.classList.contains('nav-btn') || el.classList.contains('btn-primary') || el.classList.contains('btn-secondary') || el.classList.contains('btn-small')) el.textContent = val;
+  });
+}
+
+// =============================================
+// DATABASE — localStorage only (reliable)
+// =============================================
+async function getUsers() {
+  return JSON.parse(localStorage.getItem('ms_users') || '{}');
+}
+async function saveUser(key, data) {
+  const users = JSON.parse(localStorage.getItem('ms_users') || '{}');
+  if (data !== null) users[key] = data;
+  else delete users[key];
+  localStorage.setItem('ms_users', JSON.stringify(users));
+}
+async function getHistory(name) {
+  return JSON.parse(localStorage.getItem('ms_hist_' + name.toLowerCase()) || '[]');
+}
+async function saveHistoryEntry(name, entry) {
+  const hist = JSON.parse(localStorage.getItem('ms_hist_' + name.toLowerCase()) || '[]');
+  hist.push(entry);
+  localStorage.setItem('ms_hist_' + name.toLowerCase(), JSON.stringify(hist));
+}
+// Active session still in localStorage (device-specific)
+function getActiveSession() {
+  try { return JSON.parse(localStorage.getItem('ms_active')); } catch(e) { return null; }
+}
+function setActiveSession(patient) {
+  localStorage.setItem('ms_active', JSON.stringify({ name: patient ? patient.name.toLowerCase() : null, patientName: patient ? patient.name : null, loginTime: Date.now() }));
+}
+function clearActiveSession() { localStorage.removeItem('ms_active'); }
+
+// =============================================
+// AUTH
+// =============================================
+function togglePass(id, btn) {
+  const input = document.getElementById(id);
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.textContent = '🙈';
+    btn.classList.add('reveal');
+  } else {
+    input.type = 'password';
+    btn.textContent = '👁';
+    btn.classList.remove('reveal');
+  }
+}
+
+function showTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('loginForm').style.display    = tab === 'login' ? 'block' : 'none';
+  document.getElementById('registerForm').style.display = tab === 'register' ? 'block' : 'none';
+}
+
+async function register() {
+  const name   = document.getElementById('regName').value.trim();
+  const age    = document.getElementById('regAge').value;
+  const gender = document.getElementById('regGender').value;
+  const weight = document.getElementById('regWeight').value;
+  const height = document.getElementById('regHeight').value;
+  const email  = document.getElementById('regEmail').value.trim();
+  const pass   = document.getElementById('regPass').value;
+
+  if (!name || !age || !gender || !pass) {
+    showFormMsg('registerMsg', 'error', lang === 'fr' ? 'Veuillez remplir tous les champs obligatoires.' : 'Please fill all required fields.');
+    return;
+  }
+
+  showFormMsg('registerMsg', 'warning', lang === 'fr' ? 'Création...' : 'Creating...');
+
+  // Calcul IMC automatique
+  let imc = null;
+  if (weight && height) {
+    const h = parseFloat(height) / 100;
+    imc = (parseFloat(weight) / (h * h)).toFixed(1);
+  }
+
+  // Save locally first (always works)
+  const users = JSON.parse(localStorage.getItem('ms_users') || '{}');
+  if (users[name.toLowerCase()]) {
+    showFormMsg('registerMsg', 'error', lang === 'fr' ? 'Ce compte existe déjà.' : 'Account already exists.');
+    return;
+  }
+  const userData = { name, age, gender, weight: weight||'', height: height||'', email: email||'', imc: imc||'', pass, created: new Date().toISOString() };
+  users[name.toLowerCase()] = userData;
+  localStorage.setItem('ms_users', JSON.stringify(users));
+
+  // Push to Node-RED so doctor can see full patient profile
+  try {
+    await fetch(READINGS_URL.replace('/readings', '/users'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+      body: JSON.stringify({
+        name, age, gender,
+        weight: weight||'', height: height||'',
+        email: email||'', imc: imc||'',
+        createdAt: userData.created
+      })
+    });
+  } catch(e) {}
+
+  showFormMsg('registerMsg', 'success', lang === 'fr' ? '✓ Compte créé ! Vous pouvez vous connecter.' : '✓ Account created! You can now login.');
+}
+
+// No admin login in patient app — admin functions moved to doctor_dashboard.html
+async function login() {
+  const name = document.getElementById('loginName').value.trim();
+  const pass = document.getElementById('loginPass').value;
+
+  showFormMsg('loginMsg', 'warning', lang === 'fr' ? 'Connexion...' : 'Signing in...');
+  const users = await getUsers();
+  const user  = users[name.toLowerCase()];
+
+  if (!user || user.pass !== pass) {
+    const keys = Object.keys(users);
+    showFormMsg('loginMsg', 'error', (lang === 'fr' ? 'Nom ou mot de passe invalide.' : 'Invalid name or password.') + (keys.length === 0 ? ' (No accounts found — please register first)' : ' (' + keys.length + ' account(s) on this device)'));
+    return;
+  }
+
+  // Check session lock — both local and cross-device via Node-RED
+  const active = getActiveSession();
+  if (active) {
+    const elapsed = (Date.now() - active.loginTime) / 1000 / 60;
+    if (elapsed < AUTO_LOGOUT_MIN && active.name !== name.toLowerCase()) {
+      showFormMsg('loginMsg', 'warning',
+        lang === 'fr'
+          ? `⚠️ Appareil utilisé par ${active.patientName}. Veuillez attendre ou demandez-lui de se déconnecter.`
+          : `⚠️ Device in use by ${active.patientName}. Please wait or ask them to logout.`
+      );
+      return;
+    }
+  }
+
+  // Cross-device lock — check Node-RED current patient
+  try {
+    const pr = await fetch(PATIENT_URL, { headers: { 'ngrok-skip-browser-warning': 'true' }, signal: AbortSignal.timeout(2000) });
+    const pd = await pr.json();
+    // Block if another patient is logged in (loginTime within last 10 min)
+    if (pd && pd.name && pd.name.toLowerCase() !== name.toLowerCase()) {
+      const remoteElapsed = pd.loginTime ? (Date.now() - pd.loginTime) / 1000 / 60 : 999;
+      if (remoteElapsed < AUTO_LOGOUT_MIN) {
+        showFormMsg('loginMsg', 'warning',
+          lang === 'fr'
+            ? `⚠️ Appareil utilisé par ${pd.name}. Veuillez attendre ou demandez-lui de se déconnecter.`
+            : `⚠️ Device in use by ${pd.name}. Please wait or ask them to logout.`
+        );
+        return;
+      }
+    }
+  } catch(e) {}
+
+  setActiveSession(user);
+  currentPatient = user;
+  startDashboard();
+}
+
+function guestSession() {
+  const active = getActiveSession();
+  if (active) {
+    const elapsed = (Date.now() - active.loginTime) / 1000 / 60;
+    // Only block guest if a named patient (not another guest) is active
+    if (elapsed < AUTO_LOGOUT_MIN && active.name && active.name !== 'guest' && active.name !== 'invité') {
+      showFormMsg('loginMsg', 'warning',
+        lang === 'fr'
+          ? `⚠️ Appareil utilisé par ${active.patientName}. Veuillez attendre.`
+          : `⚠️ Device in use by ${active.patientName}. Please wait.`
+      );
+      return;
+    }
+  }
+  // Clear any stuck guest session
+  clearActiveSession();
+  currentPatient = { name: lang === 'fr' ? 'Invité' : 'Guest', age: '--', gender: '--', guest: true };
+  setActiveSession(currentPatient);
+  startDashboard();
+}
+
+function showFormMsg(id, type, text) {
+  const el = document.getElementById(id);
+  el.className = 'msg ' + type;
+  el.textContent = text;
+}
+
+// =============================================
+// DASHBOARD
+// =============================================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function showDashTab(tab) {
+  ['monitor','history'].forEach(t => {
+    document.getElementById(t + 'Tab').style.display    = t === tab ? 'block' : 'none';
+    document.getElementById(t + 'Btn').classList.toggle('active', t === tab);
+  });
+  if (tab === 'history') loadHistory();
+}
+
+function startDashboard() {
+  showScreen('dashboardScreen');
+  showDashTab('monitor');
+
+  // Update topbar
+  document.getElementById('patientAvatar').textContent      = currentPatient.name.charAt(0).toUpperCase();
+  document.getElementById('patientNameDisplay').textContent = currentPatient.name;
+  document.getElementById('patientMetaDisplay').textContent = currentPatient.guest ? (lang === 'fr' ? 'Session invité' : 'Guest session') : currentPatient.age + ' yrs · ' + currentPatient.gender;
+
+  // Notify Node-RED with full patient profile
+  fetch(PATIENT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+    body: JSON.stringify({
+      name: currentPatient.name,
+      age: currentPatient.age,
+      gender: currentPatient.gender,
+      weight: currentPatient.weight || '',
+      height: currentPatient.height || '',
+      imc: currentPatient.imc || '',
+      email: currentPatient.email || '',
+      loginTime: Date.now()
+    })
+  }).catch(() => {});
+
+  // Reset state
+  sessionReadings = [];
+  bpmHistory = [];
+  bpmReadings = [];
+  afibRRBuffer = [];
+  afibAlertShown = false;
+  secondsLeft = AUTO_LOGOUT_MIN * 60;
+
+  // Init chart
+  initChart();
+
+  // Start polling
+  fetchReadings();
+  fetchInterval = setInterval(fetchReadings, 2000);
+
+  // Countdown timer
+  const timerBar = document.getElementById('timerBar');
+  timerBar.style.display = 'block';
+  timerBar.classList.remove('urgent');
+
+  clearInterval(countdownInterval);
+  countdownInterval = setInterval(() => {
+    secondsLeft--;
+    const mins = Math.floor(secondsLeft / 60);
+    const secs = secondsLeft % 60;
+    timerBar.textContent = (lang === 'fr' ? 'Déconnexion auto dans ' : 'Auto logout in ') + mins + ':' + String(secs).padStart(2,'0');
+    if (secondsLeft <= 60) timerBar.classList.add('urgent');
+    if (secondsLeft <= 0) {
+      showToast(lang === 'fr' ? '⏱️ Session expirée — déconnexion auto' : '⏱️ Session expired — auto logout', 'info');
+      setTimeout(logout, 2500);
+    }
+  }, 1000);
+
+  applyLang();
+}
+
+function resetTimer() {
+  secondsLeft = AUTO_LOGOUT_MIN * 60;
+  document.getElementById('timerBar').classList.remove('urgent');
+  // Update active session timestamp
+  if (currentPatient) setActiveSession(currentPatient);
+}
+
+function confirmLogout() {
+  if (sessionReadings.length > 0) showSummary();
+  else logout();
+}
+
+function logout() {
+  clearActiveSession();
+  try {
+    fetch(PATIENT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+      body: JSON.stringify({ name: null, loginTime: 0 })
+    });
+  } catch(e) {}
+  clearInterval(fetchInterval);
+  clearInterval(countdownInterval);
+  currentPatient  = null;
+  sessionReadings = [];
+  bpmHistory      = [];
+  bpmReadings     = [];
+  afibRRBuffer    = [];
+  afibAlertShown  = false;
+  document.getElementById('timerBar').style.display = 'none';
+  document.getElementById('patientAvatar').style.background = '';
+  document.getElementById('monitorBtn').style.display = 'inline-block';
+  document.getElementById('historyBtn').style.display = 'inline-block';
+  document.getElementById('loginName').value = '';
+  document.getElementById('loginPass').value = '';
+  document.getElementById('loginMsg').className = 'msg';
+  showScreen('authScreen');
+}
+
+// =============================================
+// CHART
+// =============================================
+function initChart() {
+  if (bpmChart) { bpmChart.destroy(); bpmChart = null; }
+  const ctx = document.getElementById('bpmChart').getContext('2d');
+  bpmChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [{
+        data: [],
+        borderColor: '#00d4aa',
+        backgroundColor: 'rgba(0,212,170,0.06)',
+        borderWidth: 2,
+        pointRadius: 0,
+        tension: 0.4,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { display: false },
+        y: {
+          grid: { color: 'rgba(30,41,59,0.8)' },
+          ticks: { color: '#64748b', font: { family: 'DM Mono', size: 10 } },
+          min: 40, max: 130
+        }
+      },
+      animation: { duration: 250 }
+    }
+  });
+}
+
+// =============================================
+// FETCH & UPDATE
+// =============================================
+async function fetchReadings() {
+  try {
+    const res  = await fetch(READINGS_URL, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+    const data = await res.json();
+    updateDashboard(parseFloat(data.bpm), parseFloat(data.spo2));
+  } catch(e) {}
+}
+
+async function updateDashboard(bpm, spo2) {
+  const now = new Date().toLocaleTimeString();
+
+  if (!bpm || bpm === 0 || isNaN(bpm)) {
+    document.getElementById('bpmValue').textContent   = '--';
+    document.getElementById('spo2Value').textContent  = '--';
+    document.getElementById('stressEmoji').textContent = '⏳';
+    document.getElementById('stressValue').textContent = lang === 'fr' ? 'Aucun doigt détecté' : 'No finger detected';
+    document.getElementById('noFingerMsg').style.display   = 'block';
+    document.getElementById('historyTable').style.display  = 'none';
+    document.getElementById('bpmAnomaly').textContent = '';
+    return;
+  }
+
+  // Active → reset timer
+  resetTimer();
+
+  document.getElementById('noFingerMsg').style.display  = 'none';
+  document.getElementById('historyTable').style.display = 'table';
+
+  // BPM — OMS classification
+  document.getElementById('bpmValue').textContent = Math.round(bpm);
+  let bpmOmsText = '';
+  if (bpm < 50) {
+    document.getElementById('bpmValue').className = 'vital-value danger';
+    setStatus('bpmStatus', 'danger', lang === 'fr' ? 'BRADYCARDIE SÉVÈRE' : 'SEVERE BRADYCARDIA');
+    bpmOmsText = lang === 'fr' ? '🔴 OMS : FC < 50 BPM — Urgence médicale' : '🔴 WHO: HR < 50 BPM — Medical emergency';
+  } else if (bpm < 60) {
+    document.getElementById('bpmValue').className = 'vital-value warning';
+    setStatus('bpmStatus', 'warning', lang === 'fr' ? 'BRADYCARDIE' : 'BRADYCARDIA');
+    bpmOmsText = lang === 'fr' ? '🟡 OMS : FC 50-60 BPM — Surveillance recommandée' : '🟡 WHO: HR 50-60 BPM — Monitoring advised';
+  } else if (bpm <= 100) {
+    document.getElementById('bpmValue').className = 'vital-value';
+    setStatus('bpmStatus', 'normal', lang === 'fr' ? 'NORMAL — OMS ✓' : 'NORMAL — WHO ✓');
+    bpmOmsText = lang === 'fr' ? '🟢 OMS : FC 60-100 BPM — Fréquence cardiaque normale' : '🟢 WHO: HR 60-100 BPM — Normal range';
+  } else if (bpm <= 120) {
+    document.getElementById('bpmValue').className = 'vital-value warning';
+    setStatus('bpmStatus', 'warning', lang === 'fr' ? 'TACHYCARDIE' : 'TACHYCARDIA');
+    bpmOmsText = lang === 'fr' ? '🟡 OMS : FC 100-120 BPM — Surveillance recommandée' : '🟡 WHO: HR 100-120 BPM — Monitoring advised';
+  } else {
+    document.getElementById('bpmValue').className = 'vital-value danger';
+    setStatus('bpmStatus', 'danger', lang === 'fr' ? 'TACHYCARDIE SÉVÈRE' : 'SEVERE TACHYCARDIA');
+    bpmOmsText = lang === 'fr' ? '🔴 OMS : FC > 120 BPM — Urgence médicale' : '🔴 WHO: HR > 120 BPM — Medical emergency';
+  }
+  document.getElementById('bpmOms').textContent = bpmOmsText;
+
+  // SpO2 — OMS classification
+  document.getElementById('spo2Value').textContent = Math.round(spo2);
+  let spo2OmsText = '';
+  if (spo2 < 90) {
+    document.getElementById('spo2Value').className = 'vital-value danger';
+    setStatus('spo2Status', 'danger', lang === 'fr' ? 'HYPOXÉMIE SÉVÈRE' : 'SEVERE HYPOXEMIA');
+    spo2OmsText = lang === 'fr' ? '🔴 OMS : SpO2 < 90% — URGENCE MÉDICALE' : '🔴 WHO: SpO2 < 90% — MEDICAL EMERGENCY';
+    showToast('⚠️ SpO2 ' + (lang === 'fr' ? 'CRITIQUE: ' : 'CRITICAL: ') + Math.round(spo2) + '%');
+  } else if (spo2 < 95) {
+    document.getElementById('spo2Value').className = 'vital-value warning';
+    setStatus('spo2Status', 'warning', lang === 'fr' ? 'HYPOXÉMIE LÉGÈRE' : 'MILD HYPOXEMIA');
+    spo2OmsText = lang === 'fr' ? '🟡 OMS : SpO2 90-94% — Surveillance recommandée' : '🟡 WHO: SpO2 90-94% — Monitoring advised';
+  } else {
+    document.getElementById('spo2Value').className = 'vital-value';
+    setStatus('spo2Status', 'normal', lang === 'fr' ? 'NORMAL — OMS ✓' : 'NORMAL — WHO ✓');
+    spo2OmsText = lang === 'fr' ? '🟢 OMS : SpO2 ≥ 95% — Saturation normale' : '🟢 WHO: SpO2 ≥ 95% — Normal saturation';
+  }
+  document.getElementById('spo2Oms').textContent = spo2OmsText;
+
+  // HRV / Stress
+  bpmReadings.push(bpm);
+  if (bpmReadings.length > 10) bpmReadings.shift();
+  updateStress();
+
+  // Anomaly detection
+  const isAnomaly = await detectAnomaly(bpm);
+
+  // ── NEWS2 SCORE (partiel : BPM + SpO2) ──
+  let news2 = 0;
+  if      (bpm >= 111)             news2 += 3;
+  else if (bpm >= 91)              news2 += 1;
+  else if (bpm >= 51 && bpm <= 90) news2 += 0;
+  else if (bpm <= 40)              news2 += 3;
+  else if (bpm <= 50)              news2 += 1;
+
+  if      (spo2 <= 91) news2 += 3;
+  else if (spo2 <= 93) news2 += 2;
+  else if (spo2 <= 95) news2 += 1;
+
+  document.getElementById('news2Value').textContent = news2;
+  let n2label, n2cls, n2reco;
+  if (news2 === 0) {
+    n2label = lang === 'fr' ? 'RISQUE FAIBLE' : 'LOW RISK';
+    n2cls   = 'normal';
+    n2reco  = lang === 'fr' ? 'Paramètres dans la norme. Surveillance standard recommandée.' : 'Parameters within normal range. Standard monitoring advised.';
+  } else if (news2 <= 4) {
+    n2label = lang === 'fr' ? 'RISQUE MODÉRÉ' : 'MODERATE RISK';
+    n2cls   = 'warning';
+    n2reco  = lang === 'fr' ? 'Surveillance accrue recommandée. Informez le personnel médical.' : 'Increased monitoring recommended. Inform medical staff.';
+  } else {
+    n2label = lang === 'fr' ? 'RISQUE ÉLEVÉ' : 'HIGH RISK';
+    n2cls   = 'danger';
+    n2reco  = lang === 'fr' ? '⚠️ Intervention médicale urgente recommandée !' : '⚠️ Urgent medical intervention recommended!';
+  }
+  setStatus('news2Status', n2cls, n2label);
+  document.getElementById('news2Reco').textContent = n2reco;
+
+  // ── AFib DETECTION (RMSSD method) ──
+  afibRRBuffer.push(Math.round(60000 / bpm));
+  if (afibRRBuffer.length > 12) afibRRBuffer.shift();
+  if (afibRRBuffer.length >= 6) {
+    const diffs = [];
+    for (let i = 1; i < afibRRBuffer.length; i++) {
+      diffs.push(Math.pow(afibRRBuffer[i] - afibRRBuffer[i-1], 2));
+    }
+    const rmssd = Math.sqrt(diffs.reduce((a,b) => a+b, 0) / diffs.length);
+    document.getElementById('rmssdValue').textContent = Math.round(rmssd);
+    const afibDetected = rmssd > 55;
+    const afibEl = document.getElementById('afibAlert');
+    if (afibDetected) {
+      afibEl.style.display = 'block';
+      if (!afibAlertShown) {
+        showToast(lang === 'fr' ? '⚠️ AFib suspectée — consultez un médecin' : '⚠️ AFib suspected — consult a doctor');
+        afibAlertShown = true;
+      }
+    } else {
+      afibEl.style.display = 'none';
+      afibAlertShown = false;
+    }
+  }
+
+  // Chart
+  bpmHistory.push(bpm);
+  if (bpmHistory.length > 40) bpmHistory.shift();
+  bpmChart.data.labels   = bpmHistory.map((_, i) => i);
+  bpmChart.data.datasets[0].data = bpmHistory;
+  bpmChart.update();
+
+  // Session readings
+  const reading = { time: now, bpm: Math.round(bpm), spo2: Math.round(spo2), anomaly: isAnomaly, news2 };
+  sessionReadings.push(reading);
+
+  // Save to persistent history
+  if (!currentPatient.guest) {
+    saveHistoryEntry(currentPatient.name, { time: new Date().toISOString(), bpm: Math.round(bpm), spo2: Math.round(spo2) });
+  }
+
+  // Stats
+  const bpms  = sessionReadings.map(r => r.bpm);
+  const spo2s = sessionReadings.map(r => r.spo2);
+  document.getElementById('avgBpm').textContent  = Math.round(bpms.reduce((a,b)=>a+b,0)/bpms.length);
+  document.getElementById('avgSpo2').textContent = Math.round(spo2s.reduce((a,b)=>a+b,0)/spo2s.length);
+  document.getElementById('minBpm').textContent  = Math.min(...bpms);
+  document.getElementById('maxBpm').textContent  = Math.max(...bpms);
+
+  // Table (last 10)
+  const last10 = sessionReadings.slice(-10).reverse();
+  document.getElementById('historyBody').innerHTML = last10.map(r => {
+    const st = r.spo2 < 90
+      ? `<span style="color:var(--danger)">🔴 ${lang==='fr'?'CRITIQUE':'CRITICAL'}</span>`
+      : r.bpm < 50 || r.bpm > 120
+        ? `<span style="color:var(--danger)">🔴 ${lang==='fr'?'URGENCE':'EMERGENCY'}</span>`
+        : r.bpm < 60 || r.bpm > 100 || r.spo2 < 95
+          ? `<span style="color:var(--accent3)">🟡 ${lang==='fr'?'SURVEILLANCE':'MONITORING'}</span>`
+          : `<span style="color:var(--success)">🟢 ${lang==='fr'?'NORMAL OMS':'NORMAL WHO'}</span>`;
+    const n2color = (r.news2||0) === 0 ? 'var(--success)' : (r.news2||0) <= 4 ? 'var(--accent3)' : 'var(--danger)';
+    const an = r.anomaly
+      ? `<span style="color:var(--accent2)">⚠️ ${lang==='fr'?'ANOMALIE':'ANOMALY'}</span>`
+      : `<span style="color:var(--success)">✓</span>`;
+    return `<tr><td>${r.time}</td><td>${r.bpm}</td><td>${r.spo2}%</td><td>${st}</td><td style="color:${n2color};font-weight:600">${r.news2 ?? '--'}</td><td>${an}</td></tr>`;
+  }).join('');
+}
+
+function setStatus(id, type, text) {
+  const el = document.getElementById(id);
+  el.className = 'status-badge ' + type;
+  el.innerHTML = `<div class="dot"></div><span>${text}</span>`;
+}
+
+function updateStress() {
+  if (bpmReadings.length < 5) {
+    document.getElementById('stressEmoji').textContent = '⏳';
+    document.getElementById('stressValue').textContent = `${lang==='fr'?'Collecte...':'Collecting...'} ${bpmReadings.length}/5`;
+    return;
+  }
+  const mean = bpmReadings.reduce((a,b)=>a+b,0)/bpmReadings.length;
+  const std  = Math.sqrt(bpmReadings.reduce((a,b)=>a+Math.pow(b-mean,2),0)/bpmReadings.length);
+
+  if (std < 2) {
+    document.getElementById('stressEmoji').textContent = '😰';
+    document.getElementById('stressValue').textContent = lang==='fr' ? 'Stressé' : 'Stressed';
+    document.getElementById('stressDesc').textContent  = lang==='fr' ? 'Faible variabilité détectée' : 'Low heart rate variability';
+    document.getElementById('stressDesc').style.color  = 'var(--accent2)';
+  } else if (std < 5) {
+    document.getElementById('stressEmoji').textContent = '😐';
+    document.getElementById('stressValue').textContent = lang==='fr' ? 'Normal' : 'Normal';
+    document.getElementById('stressDesc').textContent  = lang==='fr' ? 'Variabilité normale' : 'Normal heart rate variability';
+    document.getElementById('stressDesc').style.color  = 'var(--accent3)';
+  } else {
+    document.getElementById('stressEmoji').textContent = '😌';
+    document.getElementById('stressValue').textContent = lang==='fr' ? 'Détendu' : 'Relaxed';
+    document.getElementById('stressDesc').textContent  = lang==='fr' ? 'Bonne variabilité cardiaque' : 'Good heart rate variability';
+    document.getElementById('stressDesc').style.color  = 'var(--success)';
+  }
+}
+
+async function detectAnomaly(bpm) {
+  if (currentPatient.guest) return false;
+  const hist = await getHistory(currentPatient.name);
+  if (hist.length < 20) {
+    document.getElementById('bpmAnomaly').textContent = `🔄 ${hist.length}/20`;
+    document.getElementById('bpmAnomaly').style.color = 'var(--muted)';
+    return false;
+  }
+  const bpms = hist.slice(-50).map(h => h.bpm);
+  const mean = bpms.reduce((a,b)=>a+b,0)/bpms.length;
+  const std  = Math.sqrt(bpms.reduce((a,b)=>a+Math.pow(b-mean,2),0)/bpms.length);
+  const z    = Math.abs((bpm - mean) / std);
+
+  if (z > 2) {
+    document.getElementById('bpmAnomaly').textContent = '⚠️ ANOMALY';
+    document.getElementById('bpmAnomaly').style.color = 'var(--accent2)';
+    return true;
+  } else {
+    document.getElementById('bpmAnomaly').textContent = '✓ OK';
+    document.getElementById('bpmAnomaly').style.color = 'var(--success)';
+    return false;
+  }
+}
+
+// =============================================
+// TOAST ALERT
+// =============================================
+function showToast(msg, type = 'danger') {
+  const t = document.getElementById('alertToast');
+  t.textContent = msg;
+  t.className   = 'alert-toast show' + (type === 'info' ? ' info' : '');
+  clearTimeout(alertTimeout);
+  alertTimeout  = setTimeout(() => t.classList.remove('show'), 5000);
+}
+
+// =============================================
+// SESSION SUMMARY MODAL
+// =============================================
+function showSummary() {
+  if (!sessionReadings.length) { logout(); return; }
+  const bpms  = sessionReadings.map(r => r.bpm);
+  const spo2s = sessionReadings.map(r => r.spo2);
+  const anomalies = sessionReadings.filter(r => r.anomaly).length;
+
+  document.getElementById('summaryPatientName').textContent =
+    (lang==='fr'?'Patient: ':'Patient: ') + currentPatient.name + ' · ' + sessionReadings.length + (lang==='fr'?' lectures':' readings');
+
+  document.getElementById('summaryGrid').innerHTML = [
+    { label: lang==='fr'?'MOY BPM':'AVG BPM', value: Math.round(bpms.reduce((a,b)=>a+b,0)/bpms.length) },
+    { label: lang==='fr'?'MOY SpO2':'AVG SpO2', value: Math.round(spo2s.reduce((a,b)=>a+b,0)/spo2s.length) + '%' },
+    { label: lang==='fr'?'MIN BPM':'MIN BPM', value: Math.min(...bpms) },
+    { label: lang==='fr'?'MAX BPM':'MAX BPM', value: Math.max(...bpms) },
+    { label: lang==='fr'?'ANOMALIES':'ANOMALIES', value: anomalies },
+    { label: lang==='fr'?'DURÉE':'DURATION', value: sessionReadings.length * 2 + 's' },
+  ].map(i => `<div class="summary-item"><div class="summary-label">${i.label}</div><div class="summary-value">${i.value}</div></div>`).join('');
+
+  document.getElementById('summaryModal').classList.add('show');
+}
+
+function closeSummary() {
+  document.getElementById('summaryModal').classList.remove('show');
+  logout();
+}
+
+// =============================================
+// HISTORY PAGE
+// =============================================
+async function loadHistory() {
+  if (!currentPatient || currentPatient.guest) {
+    document.getElementById('historyEmpty').style.display = 'block';
+    document.getElementById('historySessions').innerHTML  = '';
+    return;
+  }
+  document.getElementById('historySessions').innerHTML = '<div class="no-finger"><div class="no-finger-icon">⏳</div><div>Loading...</div></div>';
+  const hist = await getHistory(currentPatient.name);
+  document.getElementById('historySubtitle').textContent =
+    currentPatient.name + ' · ' + hist.length + (lang==='fr'?' lectures totales':' total readings');
+
+  if (!hist.length) {
+    document.getElementById('historyEmpty').style.display = 'block';
+    document.getElementById('historySessions').innerHTML  = '';
+    return;
+  }
+  document.getElementById('historyEmpty').style.display = 'none';
+
+  // Group by date
+  const grouped = {};
+  hist.forEach(r => {
+    const d = new Date(r.time).toLocaleDateString();
+    if (!grouped[d]) grouped[d] = [];
+    grouped[d].push(r);
+  });
+
+  document.getElementById('historySessions').innerHTML = Object.entries(grouped).reverse().map(([date, readings]) => {
+    const bpms  = readings.map(r => r.bpm);
+    const spo2s = readings.map(r => r.spo2);
+    return `
+      <div class="session-card">
+        <div class="session-date">${date} · ${readings.length} ${lang==='fr'?'lectures':'readings'}</div>
+        <div class="session-stats">
+          <div class="session-stat">
+            <div class="session-stat-label">${lang==='fr'?'MOY BPM':'AVG BPM'}</div>
+            <div class="session-stat-value">${Math.round(bpms.reduce((a,b)=>a+b,0)/bpms.length)}</div>
+          </div>
+          <div class="session-stat">
+            <div class="session-stat-label">${lang==='fr'?'MOY SpO2':'AVG SpO2'}</div>
+            <div class="session-stat-value">${Math.round(spo2s.reduce((a,b)=>a+b,0)/spo2s.length)}%</div>
+          </div>
+          <div class="session-stat">
+            <div class="session-stat-label">MIN BPM</div>
+            <div class="session-stat-value">${Math.min(...bpms)}</div>
+          </div>
+          <div class="session-stat">
+            <div class="session-stat-label">MAX BPM</div>
+            <div class="session-stat-value">${Math.max(...bpms)}</div>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// =============================================
+// EXPORT CSV
+// =============================================
+function exportCSV() {
+  if (!sessionReadings.length) return;
+  const rows = [['Time','BPM','SpO2','WHO Status','NEWS2','Anomaly']];
+  sessionReadings.forEach(r => {
+    const st = r.spo2 < 90 ? 'CRITICAL' : r.bpm < 50 || r.bpm > 120 ? 'EMERGENCY' : r.bpm < 60 || r.bpm > 100 || r.spo2 < 95 ? 'MONITORING' : 'NORMAL_WHO';
+    rows.push([r.time, r.bpm, r.spo2, st, r.news2 ?? 0, r.anomaly ? 'YES' : 'NO']);
+  });
+  const csv  = rows.map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = `${currentPatient.name}_${new Date().toLocaleDateString().replace(/\//g,'-')}.csv`;
+  a.click();
+}
+
+// =============================================
+// INIT
+// =============================================
+document.addEventListener("DOMContentLoaded", function() { applyLang(); initNgrok(); });
+</script>
+</body>
+</html>
